@@ -1,4 +1,4 @@
-## About
+﻿## About
 
 Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers and managed byrefs.
 

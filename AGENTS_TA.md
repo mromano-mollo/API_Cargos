@@ -82,8 +82,8 @@ Suggested structure inside `API_Cargos` project:
   /Persistence
     ISyncRepository.vb
     SqlSyncRepository.vb
-    ICargosFrontieraRepository.vb
-    SqlCargosFrontieraRepository.vb
+    ICargosContrattiFrontieraRepository.vb
+    SqlCargosContrattiFrontieraRepository.vb
     OutboxRecord.vb
   /Orchestration
     CargosProcessor.vb
@@ -105,7 +105,7 @@ Preferred mode: long-running single-instance process.
 3. Enter loop while service status is active and local time is before configured cutoff (for example 22:00).
 4. Inside each cycle:
    - execute sync procedure `Cargos_Sync_Contratti_Frontiera`;
-   - fetch eligible outbox records from `Cargos_Frontiera`;
+   - fetch eligible outbox records from `Cargos_Contratti_Frontiera`;
    - validate mandatory/conditional data;
    - notify branch on missing mandatory fields;
    - build fixed-width record lines;
@@ -136,7 +136,7 @@ Key design rule: all data transformations happen before `RecordBuilder`.
 Extraction eligibility rule: process only rows from `Cargos_Vista_Contratti`, which already filters signed contracts and delivered line.
 
 ## 4.2 Outbox and idempotency
-Use table `Cargos_Frontiera` as single source for processing state.
+Use table `Cargos_Contratti_Frontiera` as single source for processing state.
 
 ### Snapshot state table (`Cargos_Contratti`)
 Keep one row per contract-line as the latest extracted state from `Cargos_Vista_Contratti`.
@@ -151,7 +151,7 @@ Core fields:
 - `LastQueuedAt`
 - `LastSeenAt`
 
-### Outbox table (`Cargos_Frontiera`)
+### Outbox table (`Cargos_Contratti_Frontiera`)
 Core fields:
 - `ContractNo` + `LineNo`
 - `CargosContractId`
@@ -201,7 +201,7 @@ Core fields:
   - `TIPO_PAGAMENTO`
 
 ### Idempotency constraints
-- Unique key on `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Frontiera`.
+- Unique key on `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
 - Records with `SENT_OK` are never eligible again for the same snapshot.
 - Selection query should process only the latest pending/retry snapshot per contract to avoid sending obsolete data.
 - Eligibility predicate:
@@ -511,11 +511,11 @@ Correlation:
 2. Procedure responsibilities:
    - read `Cargos_Vista_Contratti` (signed + delivered line)
    - upsert `Cargos_Contratti`
-   - enqueue `PENDING` rows in `Cargos_Frontiera` with:
+   - enqueue `PENDING` rows in `Cargos_Contratti_Frontiera` with:
       - `Reason = INITIAL_SEND` for first occurrence
       - `Reason = DATE_CHANGE` for changed checkin/checkout
       - `Reason = DATA_FIX` for payload corrections on rows previously blocked/rejected
-3. `OutboxRepository.GetEligible()` from `Cargos_Frontiera`.
+3. `OutboxRepository.GetEligible()` from `Cargos_Contratti_Frontiera`.
 4. Build domain input DTOs.
 5. Apply SQL/view prevalidation metadata if available.
 6. Resolve coded fields through local lookup service if the view did not already provide CaRGOS codes.
@@ -581,7 +581,7 @@ CREATE TABLE dbo.Cargos_Contratti (
     CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, LineNo)
 );
 
-CREATE TABLE dbo.Cargos_Frontiera (
+CREATE TABLE dbo.Cargos_Contratti_Frontiera (
     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
     ContractNo NVARCHAR(50) NOT NULL,
     LineNo BIGINT NOT NULL,
@@ -594,7 +594,7 @@ CREATE TABLE dbo.Cargos_Frontiera (
     MissingFields NVARCHAR(MAX) NULL,
     LastError NVARCHAR(MAX) NULL,
     TransactionId NVARCHAR(100) NULL,
-    AttemptCount INT NOT NULL CONSTRAINT DF_Cargos_Frontiera_AttemptCount DEFAULT (0),
+    AttemptCount INT NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_AttemptCount DEFAULT (0),
     LastAttemptAt DATETIME2 NULL,
     NextRetryAt DATETIME2 NULL,
     LastMissingEmailAt DATETIME2 NULL,
@@ -605,11 +605,11 @@ CREATE TABLE dbo.Cargos_Frontiera (
     UpdatedAt DATETIME2 NOT NULL
 );
 
-CREATE UNIQUE INDEX UQ_Cargos_Frontiera_Snapshot
-ON dbo.Cargos_Frontiera(ContractNo, LineNo, SnapshotHash);
+CREATE UNIQUE INDEX UQ_Cargos_Contratti_Frontiera_Snapshot
+ON dbo.Cargos_Contratti_Frontiera(ContractNo, LineNo, SnapshotHash);
 
-CREATE INDEX IX_Cargos_Frontiera_StatusRetry
-ON dbo.Cargos_Frontiera(Status, NextRetryAt);
+CREATE INDEX IX_Cargos_Contratti_Frontiera_StatusRetry
+ON dbo.Cargos_Contratti_Frontiera(Status, NextRetryAt);
 ```
 
 Notes:
@@ -653,7 +653,7 @@ Notes:
 ## Phase A - Foundation in current console
 - Add folder structure and core models.
 - Add config loader and startup validation.
-- Add repositories for sync-procedure execution and `Cargos_Frontiera`.
+- Add repositories for sync-procedure execution and `Cargos_Contratti_Frontiera`.
 
 ## Phase B - Core CaRGOS integration
 - Implement `CryptoService`.
@@ -709,10 +709,10 @@ Notes:
 
 ## Tracked implemented updates (as of 2026-03-06)
 - [x] Added `sql/Cargos_Setup.sql` as single DB deployment script.
-- [x] Renamed queue naming to `Cargos_Frontiera` and aligned project code.
+- [x] Renamed queue naming to `Cargos_Contratti_Frontiera` and aligned project code.
 - [x] Renamed identity key `ContractId` to `ContractNo`.
 - [x] Added `LineNo` and switched uniqueness/idempotency to contract-line.
-- [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Frontiera`.
+- [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Contratti_Frontiera`.
 - [x] Updated sync procedure to ingest mandatory payload fields from `Cargos_Vista_Contratti`.
 - [x] Implemented real token + send pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
 - [x] Confirmed policy to reuse `CommonLibrary` for generic concerns and avoid changes unless strictly generic.
@@ -766,7 +766,7 @@ A release is technically complete when:
 - duplicate send prevention is guaranteed by both logic and DB constraints;
 - extraction is driven by `Cargos_Vista_Contratti` (signed + delivered line scope);
 - each app cycle starts by executing `Cargos_Sync_Contratti_Frontiera`;
-- checkin/checkout changes generate a new `Cargos_Frontiera` queue item and a new send attempt;
+- checkin/checkout changes generate a new `Cargos_Contratti_Frontiera` queue item and a new send attempt;
 - unit tests cover core algorithms and error mapping.
 
 ---

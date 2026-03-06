@@ -1,4 +1,4 @@
-Imports API_Cargos.Contracts
+﻿Imports API_Cargos.Contracts
 Imports API_Cargos.Integration
 Imports API_Cargos.Infrastructure
 Imports API_Cargos.Notifications
@@ -10,7 +10,7 @@ Namespace Orchestration
         Private ReadOnly _settings As AppSettings
         Private ReadOnly _logger As ILogger
         Private ReadOnly _syncRepository As ISyncRepository
-        Private ReadOnly _frontieraRepository As ICargosFrontieraRepository
+        Private ReadOnly _frontieraRepository As ICargosContrattiFrontieraRepository
         Private ReadOnly _cargosClient As ICargosClient
         Private ReadOnly _lookupService As ICargosLookupService
         Private ReadOnly _validationService As IValidationService
@@ -21,7 +21,7 @@ Namespace Orchestration
             settings As AppSettings,
             logger As ILogger,
             syncRepository As ISyncRepository,
-            frontieraRepository As ICargosFrontieraRepository,
+            frontieraRepository As ICargosContrattiFrontieraRepository,
             cargosClient As ICargosClient,
             lookupService As ICargosLookupService,
             validationService As IValidationService,

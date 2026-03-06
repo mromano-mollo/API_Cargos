@@ -1,4 +1,4 @@
-Imports System.Threading
+﻿Imports System.Threading
 Imports API_Cargos.Integration
 Imports API_Cargos.Infrastructure
 Imports API_Cargos.Notifications
@@ -56,7 +56,7 @@ Module Module1
                 End Try
             End If
 
-            Dim frontieraRepository As ICargosFrontieraRepository = New SqlCargosFrontieraRepository(
+            Dim frontieraRepository As ICargosContrattiFrontieraRepository = New SqlCargosContrattiFrontieraRepository(
                 settings.ConnectionString,
                 settings.DbCommandTimeoutSeconds
             )

@@ -1,4 +1,4 @@
-## About
+﻿## About
 
 Provides hardware-accelerated numeric types, suitable for high-performance processing and graphics applications.
 

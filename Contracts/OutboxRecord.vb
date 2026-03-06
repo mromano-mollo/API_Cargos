@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 
 Namespace Contracts
     Public NotInheritable Class OutboxRecord

@@ -1,4 +1,4 @@
-# CARGOS Integration Service (VB.NET) — Functional + Technical Specification (Codex Friendly)
+﻿# CARGOS Integration Service (VB.NET) → Functional + Technical Specification (Codex Friendly)
 
 ## 0. Purpose
 Build a background service that, for every rental contract ("nolo"), sends a POST call to the Italian State Police CaRGOS API using only **mandatory fields** initially.  
@@ -20,7 +20,7 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ## 2. Glossary
 - **Contract**: A rental contract created in our system (DB).
-- **Branch**: The contract’s branch (filiale) determined by location/ubication; used for notifications.
+- **Branch**: The contract's branch (filiale) determined by location/ubication; used for notifications.
 - **CaRGOS**: Police service receiving rental driver registrations.
 - **Record line**: A single fixed-width string representing one contract, length **1505** chars.
 - **Batch**: A single API call containing up to **100** record lines.
@@ -29,12 +29,12 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ## 3. High-level Functional Requirements
 
-### FR-01 — Process contracts
+### FR-01 → Process contracts
 - Input source is DB view `Cargos_Vista_Contratti`.
 - The view must contain only contracts in signed status and delivered line.
 - The service receives a list of "contracts-to-send" with all necessary domain fields and the branch identifier.
 
-### FR-02 — Validate mandatory fields (before calling CaRGOS)
+### FR-02 → Validate mandatory fields (before calling CaRGOS)
 - The service must validate that all CaRGOS fields marked **mandatory** are present.
 - A first validation layer can run in SQL/view logic to detect obvious missing data early and reduce queue noise.
 - The application remains the **authoritative final validator** before any `Check` or `Send` call.
@@ -42,27 +42,27 @@ This document is written to enable an AI coding agent (Codex) to implement the s
   - If "residence place" is provided, then "residence address" becomes required.
   - Second driver: either provide all required second-driver fields OR do not provide the second driver at all.
 
-### FR-03 — Missing mandatory data → notify branch
+### FR-03 → Missing mandatory data â†’ notify branch
 - If validation fails:
   - Do not call CaRGOS.
   - Mark contract status as `MISSING_DATA`.
-  - Send an email to the contract’s branch with:
+  - Send an email to the contract's branch with:
     - Contract identifier(s)
     - List of missing fields (using CaRGOS field names)
     - Optional: suggested correction steps
 
-### FR-04 — Build CaRGOS record lines
+### FR-04 → Build CaRGOS record lines
 - For validated contracts, build a fixed-width record line of length **1505** using the CaRGOS field positions (DAL/AL).
 - Initially send **mandatory fields only** (fields marked optional should be blank unless required by conditional rules).
 
-### FR-05 — Send to CaRGOS
+### FR-05 → Send to CaRGOS
 - Send record lines to CaRGOS in batches of max **100** lines per call.
 - Parse response per record line and store result:
   - If success: store `transactionid` and mark `SENT_OK`.
   - If data error: mark `SENT_KO_DATA` and notify branch with CaRGOS error details.
   - If technical error: mark `SENT_KO_RETRY` (retry later).
 
-### FR-06 — Idempotency / No duplicate sending
+### FR-06 → Idempotency / No duplicate sending
 - The service must not send the same contract snapshot twice.
 - Implement internal tracking tables where queue idempotency is keyed by `ContractNo + LineNo + SnapshotHash`.
 
@@ -79,7 +79,7 @@ This document is written to enable an AI coding agent (Codex) to implement the s
   1) execute sync procedure `Cargos_Sync_Contratti_Frontiera`;
   2) procedure extracts current eligible contracts from `Cargos_Vista_Contratti`;
   3) procedure upserts contract snapshot state in internal table `Cargos_Contratti`;
-  4) if a new contract is found, checkin/checkout values changed, or blocked/rejected payload data was corrected, procedure inserts a new pending item into `Cargos_Frontiera`.
+  4) if a new contract is found, checkin/checkout values changed, or blocked/rejected payload data was corrected, procedure inserts a new pending item into `Cargos_Contratti_Frontiera`.
 
 ---
 
@@ -92,16 +92,16 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ## 5. Technical Requirements
 
-### TR-01 — Platform & project type
+### TR-01 → Platform & project type
 - VB.NET solution
 - Recommended operational mode: long-running single-instance process (console or Windows Service style host).
 - The process can execute the worker cycle in a loop with a short sleep between cycles and stop at a configured daily cutoff time.
 
-### TR-02 — HTTP client usage
+### TR-02 → HTTP client usage
 - Use HttpClientFactory (or a single shared HttpClient instance) to avoid socket exhaustion.
 - Apply sensible timeouts (e.g., 30–60s) and classify timeout as technical error.
 
-### TR-03 — Authentication flow (CaRGOS)
+### TR-03 → Authentication flow (CaRGOS)
 The service must implement the official CaRGOS token flow:
 
 1) **GET** `/api/Token` with **Basic Auth** using CaRGOS Username/Password  
@@ -113,14 +113,14 @@ The service must implement the official CaRGOS token flow:
 4) Use encrypted token as `Authorization: Bearer <encrypted_token>`
 5) Add header: `Organization: <USERNAME>`
 
-### TR-04 — Request payload format
+### TR-04 → Request payload format
 For `Check` and `Send`, the body is:
 - JSON array of strings: `["<recordLine1>", "<recordLine2>", ...]`
 
-### TR-05 — Batch size limit
+### TR-05 → Batch size limit
 - Maximum 100 record lines per request.
 
-### TR-06 — Optional pre-validation via CaRGOS Check endpoint
+### TR-06 → Optional pre-validation via CaRGOS Check endpoint
 - Support calling `/api/Check` before `/api/Send`.
 - Default behavior can be:
   - DEV/TEST: `Check` then `Send`
@@ -135,7 +135,7 @@ For `Check` and `Send`, the body is:
 ### TR-08 - Change detection strategy for checkin/checkout
 - Implement an internal snapshot table `Cargos_Contratti` to store the last known values of `CONTRATTO_CHECKIN_DATA` and `CONTRATTO_CHECKOUT_DATA` per contract.
 - Compare current extracted values with stored snapshot using normalized datetime values (consistent timezone and precision).
-- On change detection, enqueue a new item in `Cargos_Frontiera` with reason `DATE_CHANGE`.
+- On change detection, enqueue a new item in `Cargos_Contratti_Frontiera` with reason `DATE_CHANGE`.
 - Preferred model: implement sync logic in SQL procedure `Cargos_Sync_Contratti_Frontiera` and execute it at the beginning of each app cycle.
 - SQL Agent scheduling of the same procedure is optional fallback, not the primary orchestration model.
 
@@ -273,7 +273,7 @@ Fields:
 - `LastSeenAt` (datetime)
 - `CreatedAt`, `UpdatedAt`
 
-### Suggested table: `Cargos_Frontiera`
+### Suggested table: `Cargos_Contratti_Frontiera`
 Fields:
 - `Id` (PK)
 - `ContractNo`
@@ -509,24 +509,24 @@ Add correlation id per batch to link logs.
 
 ## 16. Implementation Tasks (Codex TODO)
 
-### Phase 1 — Skeleton
+### Phase 1 → Skeleton
 - [ ] Create solution + projects listed in Section 6
 - [ ] Add dependency injection + logging in Worker project
-- [ ] Define DTOs, `Cargos_Contratti` snapshot entity, and `Cargos_Frontiera` outbox entity
+- [ ] Define DTOs, `Cargos_Contratti` snapshot entity, and `Cargos_Contratti_Frontiera` outbox entity
 
-### Phase 2 — Core integration
+### Phase 2 → Core integration
 - [ ] Implement CryptoService (AES CBC PKCS7, Base64 output)
 - [ ] Implement TokenProvider (Basic Auth GET /api/Token, caching)
 - [ ] Implement CargosClient with Check/Send methods and required headers
 - [ ] Implement RecordBuilder (fixed-width 1505)
 
-### Phase 3 — Validation + Notifications
+### Phase 3 → Validation + Notifications
 - [ ] Implement mandatory field list from CaRGOS docs (manual config or structured mapping file)
 - [ ] Implement ValidationService producing MissingFields list
 - [ ] Implement EmailService + templates
 - [ ] Implement anti-spam logic (1 email per 24h per contract unless changes)
 
-### Phase 4 — Orchestration
+### Phase 4 → Orchestration
 - [ ] Implement Worker loop:
   - execute `Cargos_Sync_Contratti_Frontiera`
   - fetch eligible outbox records
@@ -537,7 +537,7 @@ Add correlation id per batch to link logs.
   - update statuses
   - send emails on MISSING_DATA or SENT_KO_DATA
 
-### Phase 5 — Hardening
+### Phase 5 → Hardening
 - [ ] Retry policy for technical errors
 - [ ] Robust error classification
 - [ ] Add configuration validation on startup
@@ -545,13 +545,13 @@ Add correlation id per batch to link logs.
 
 ### Tracked implemented updates (as of 2026-03-06)
 - [x] Added SQL setup file `sql/Cargos_Setup.sql` as single executable DB script.
-- [x] Renamed queue table from legacy `CargosOutbox` naming to `Cargos_Frontiera`.
+- [x] Renamed queue table from legacy `CargosOutbox` naming to `Cargos_Contratti_Frontiera`.
 - [x] Renamed key field from `ContractId` to `ContractNo`.
 - [x] Added `LineNo` and changed uniqueness/idempotency to contract-line granularity.
 - [x] Added sync procedure `dbo.Cargos_Sync_Contratti_Frontiera` (view extraction + snapshot upsert + outbox enqueue).
-- [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Frontiera`.
+- [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Contratti_Frontiera`.
 - [x] Added real CaRGOS token flow and Send call pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
-- [x] Added unique idempotency index `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Frontiera`.
+- [x] Added unique idempotency index `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
 - [x] Added payload-fix reprocessing model (`DATA_FIX`) in analysis and implementation target.
 - [x] Added long-running single-instance host loop model with sleep and cutoff hour.
 - [x] Added app-side validation, record building, notification, and anti-spam implementation.
@@ -590,7 +590,7 @@ Add correlation id per batch to link logs.
    - The same contract snapshot is never enqueued twice.
 
 6) Given a contract with changed `CONTRATTO_CHECKIN_DATA` or `CONTRATTO_CHECKOUT_DATA`:
-   - A new queue item is inserted in `Cargos_Frontiera`
+   - A new queue item is inserted in `Cargos_Contratti_Frontiera`
    - A new CaRGOS call is executed with updated data.
 
 7) Given contracts not in signed status or without delivered line:

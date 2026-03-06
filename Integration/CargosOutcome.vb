@@ -1,4 +1,4 @@
-Namespace Integration
+﻿Namespace Integration
     Public Enum CargosOutcomeType
         Success
         DataError

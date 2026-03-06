@@ -1,4 +1,4 @@
-# Microsoft.IO.RecyclableMemoryStream [![NuGet Version](https://img.shields.io/nuget/v/Microsoft.IO.RecyclableMemoryStream.svg?style=flat)](https://www.nuget.org/packages/Microsoft.IO.RecyclableMemoryStream/) 
+﻿# Microsoft.IO.RecyclableMemoryStream [![NuGet Version](https://img.shields.io/nuget/v/Microsoft.IO.RecyclableMemoryStream.svg?style=flat)](https://www.nuget.org/packages/Microsoft.IO.RecyclableMemoryStream/) 
 
 A library to provide pooling for .NET `MemoryStream` objects to improve application performance, especially in the area of garbage collection.
 
@@ -25,7 +25,7 @@ Install-Package Microsoft.IO.RecyclableMemoryStream
 ## Features
 
 - The semantics are close to the original `System.IO.MemoryStream` implementation, and is intended to be a drop-in replacement as much as possible.
-- Rather than pooling the streams themselves, the underlying buffers are pooled. This allows you to use the simple `Dispose` pattern to release the buffers back to the pool, as well as detect invalid usage patterns (such as reusing a stream after it’s been disposed).
+- Rather than pooling the streams themselves, the underlying buffers are pooled. This allows you to use the simple `Dispose` pattern to release the buffers back to the pool, as well as detect invalid usage patterns (such as reusing a stream after itâ€™s been disposed).
 - `RecyclableMemoryStreamManager` is thread-safe (streams themselves are inherently NOT thread safe).
 - Implementation of `IBufferWrite<byte>`.
 - Support for enormous streams through abstracted buffer chaining.
@@ -106,7 +106,7 @@ class Program
 | **_IMPORTANT_** | Note that `RecyclableMemoryStreamManager` should be declared once and it will live for the entire process lifetime. It is perfectly fine to use multiple pools if you desire, especially if you want to configure them differently.|
 |-|:-|
 
-To facilitate easier debugging, you can optionally provide a string `tag`, which serves as a human-readable identifier for the stream. This can be something like “ClassName.MethodName”, but it can be whatever you want. Each stream also has a GUID to provide absolute identity if needed, but the `tag` is usually sufficient.
+To facilitate easier debugging, you can optionally provide a string `tag`, which serves as a human-readable identifier for the stream. This can be something like â€œClassName.MethodNameâ€, but it can be whatever you want. Each stream also has a GUID to provide absolute identity if needed, but the `tag` is usually sufficient.
 
 ```csharp
 using (var stream = manager.GetStream("Program.Main"))
@@ -115,7 +115,7 @@ using (var stream = manager.GetStream("Program.Main"))
 }
 ```
 
-You can also provide an existing buffer. It’s important to note that the data from this buffer will be *copied* into a buffer owned by the pool:
+You can also provide an existing buffer. Itâ€™s important to note that the data from this buffer will be *copied* into a buffer owned by the pool:
 
 ```csharp
 var stream = manager.GetStream("Program.Main", sourceBuffer, 

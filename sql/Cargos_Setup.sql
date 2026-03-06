@@ -1,4 +1,4 @@
-/*
+﻿/*
     CARGOS - Database setup and sync.
 
     The procedure dbo.Cargos_Sync_Contratti_Frontiera expects source view:
@@ -518,11 +518,11 @@ BEGIN
 END;
 GO
 
-IF OBJECT_ID(N'dbo.Cargos_Frontiera', N'U') IS NULL
+IF OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.Cargos_Frontiera
+    CREATE TABLE dbo.Cargos_Contratti_Frontiera
     (
-        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Frontiera PRIMARY KEY,
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Contratti_Frontiera PRIMARY KEY,
         ContractNo NVARCHAR(50) NOT NULL,
         [LineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
@@ -564,7 +564,7 @@ BEGIN
         MissingFields NVARCHAR(MAX) NULL,
         LastError NVARCHAR(MAX) NULL,
         TransactionId NVARCHAR(100) NULL,
-        AttemptCount INT NOT NULL CONSTRAINT DF_Cargos_Frontiera_AttemptCount DEFAULT (0),
+        AttemptCount INT NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_AttemptCount DEFAULT (0),
         LastAttemptAt DATETIME2 NULL,
         NextRetryAt DATETIME2 NULL,
         ClaimedBy NVARCHAR(100) NULL,
@@ -709,11 +709,11 @@ BEGIN
 END;
 GO
 
-IF OBJECT_ID(N'dbo.Cargos_Frontiera', N'U') IS NOT NULL
+IF OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
 BEGIN
-    IF COL_LENGTH(N'dbo.Cargos_Frontiera', N'ContractNo') IS NULL
-       AND COL_LENGTH(N'dbo.Cargos_Frontiera', N'ContractId') IS NOT NULL
-        EXEC sys.sp_rename N'dbo.Cargos_Frontiera.ContractId', N'ContractNo', N'COLUMN';
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContractNo') IS NULL
+       AND COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContractId') IS NOT NULL
+        EXEC sys.sp_rename N'dbo.Cargos_Contratti_Frontiera.ContractId', N'ContractNo', N'COLUMN';
 
     DECLARE @FrontieraColumns TABLE
     (
@@ -723,10 +723,10 @@ BEGIN
 
     INSERT INTO @FrontieraColumns (ColumnName, ColumnDefinition)
     VALUES
-        (N'ContractNo', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Frontiera_ContractNo DEFAULT (N'''')'),
-        (N'LineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Frontiera_LineNo DEFAULT (0)'),
-        (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Frontiera_CargosContractId DEFAULT (N'''')'),
-        (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Frontiera_BranchId DEFAULT (N'''')'),
+        (N'ContractNo', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_ContractNo DEFAULT (N'''')'),
+        (N'LineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_LineNo DEFAULT (0)'),
+        (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CargosContractId DEFAULT (N'''')'),
+        (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_BranchId DEFAULT (N'''')'),
         (N'BranchEmail', N'NVARCHAR(255) NULL'),
         (N'ContrattoId', N'NVARCHAR(10) NULL'),
         (N'ContrattoData', N'DATETIME2(0) NULL'),
@@ -760,11 +760,11 @@ BEGIN
         (N'Reason', N'NVARCHAR(30) NULL'),
         (N'SnapshotHash', N'NVARCHAR(128) NULL'),
         (N'RecordLine', N'NVARCHAR(2000) NULL'),
-        (N'Status', N'NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Frontiera_Status DEFAULT (N''PENDING'')'),
+        (N'Status', N'NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_Status DEFAULT (N''PENDING'')'),
         (N'MissingFields', N'NVARCHAR(MAX) NULL'),
         (N'LastError', N'NVARCHAR(MAX) NULL'),
         (N'TransactionId', N'NVARCHAR(100) NULL'),
-        (N'AttemptCount', N'INT NOT NULL CONSTRAINT DF_Cargos_Frontiera_AttemptCount_Migrate DEFAULT (0)'),
+        (N'AttemptCount', N'INT NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_AttemptCount_Migrate DEFAULT (0)'),
         (N'LastAttemptAt', N'DATETIME2 NULL'),
         (N'NextRetryAt', N'DATETIME2 NULL'),
         (N'ClaimedBy', N'NVARCHAR(100) NULL'),
@@ -773,13 +773,13 @@ BEGIN
         (N'LastMissingFieldsHash', N'NVARCHAR(128) NULL'),
         (N'LastRejectEmailAt', N'DATETIME2 NULL'),
         (N'LastRejectHash', N'NVARCHAR(128) NULL'),
-        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Frontiera_CreatedAt DEFAULT (SYSUTCDATETIME())'),
-        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Frontiera_UpdatedAt DEFAULT (SYSUTCDATETIME())');
+        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CreatedAt DEFAULT (SYSUTCDATETIME())'),
+        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_UpdatedAt DEFAULT (SYSUTCDATETIME())');
 
     DECLARE @SqlAddFrontiera NVARCHAR(MAX) = N'';
     SELECT @SqlAddFrontiera = @SqlAddFrontiera +
-        N'IF COL_LENGTH(N''dbo.Cargos_Frontiera'', N''' + c.ColumnName + N''') IS NULL ' +
-        N'ALTER TABLE dbo.Cargos_Frontiera ADD ' + QUOTENAME(c.ColumnName) + N' ' + c.ColumnDefinition + N';'
+        N'IF COL_LENGTH(N''dbo.Cargos_Contratti_Frontiera'', N''' + c.ColumnName + N''') IS NULL ' +
+        N'ALTER TABLE dbo.Cargos_Contratti_Frontiera ADD ' + QUOTENAME(c.ColumnName) + N' ' + c.ColumnDefinition + N';'
     FROM @FrontieraColumns c;
 
     EXEC sys.sp_executesql @SqlAddFrontiera;
@@ -904,32 +904,32 @@ BEGIN
 END;
 GO
 
-IF OBJECT_ID(N'dbo.Cargos_Frontiera', N'U') IS NOT NULL
+IF OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
 BEGIN
     IF EXISTS (
         SELECT 1
         FROM sys.indexes
-        WHERE name = N'UQ_Cargos_Frontiera_Snapshot'
-          AND object_id = OBJECT_ID(N'dbo.Cargos_Frontiera')
+        WHERE name = N'UQ_Cargos_Contratti_Frontiera_Snapshot'
+          AND object_id = OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera')
     )
-        DROP INDEX UQ_Cargos_Frontiera_Snapshot ON dbo.Cargos_Frontiera;
+        DROP INDEX UQ_Cargos_Contratti_Frontiera_Snapshot ON dbo.Cargos_Contratti_Frontiera;
 
-    CREATE UNIQUE INDEX UQ_Cargos_Frontiera_Snapshot
-    ON dbo.Cargos_Frontiera (ContractNo, [LineNo], SnapshotHash)
+    CREATE UNIQUE INDEX UQ_Cargos_Contratti_Frontiera_Snapshot
+    ON dbo.Cargos_Contratti_Frontiera (ContractNo, [LineNo], SnapshotHash)
     WHERE SnapshotHash IS NOT NULL;
 END;
 GO
 
-IF OBJECT_ID(N'dbo.Cargos_Frontiera', N'U') IS NOT NULL
+IF OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
    AND NOT EXISTS (
        SELECT 1
        FROM sys.indexes
-       WHERE name = N'IX_Cargos_Frontiera_StatusRetry'
-         AND object_id = OBJECT_ID(N'dbo.Cargos_Frontiera')
+       WHERE name = N'IX_Cargos_Contratti_Frontiera_StatusRetry'
+         AND object_id = OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera')
    )
 BEGIN
-    CREATE INDEX IX_Cargos_Frontiera_StatusRetry
-    ON dbo.Cargos_Frontiera (Status, NextRetryAt, CreatedAt);
+    CREATE INDEX IX_Cargos_Contratti_Frontiera_StatusRetry
+    ON dbo.Cargos_Contratti_Frontiera (Status, NextRetryAt, CreatedAt);
 END;
 GO
 
@@ -1221,7 +1221,7 @@ BEGIN
     (
         SELECT TOP (1)
             f.Status
-        FROM dbo.Cargos_Frontiera f
+        FROM dbo.Cargos_Contratti_Frontiera f
         WHERE f.ContractNo = s.ContractNo
           AND f.[LineNo] = s.[LineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
@@ -1305,7 +1305,7 @@ BEGIN
             NULL, NULL, @NowUtc, @NowUtc, @NowUtc
         );
 
-    INSERT INTO dbo.Cargos_Frontiera
+    INSERT INTO dbo.Cargos_Contratti_Frontiera
     (
         ContractNo, [LineNo], CargosContractId, BranchId, BranchEmail,
         ContrattoId, ContrattoData, ContrattoTipoP,
@@ -1347,7 +1347,7 @@ BEGIN
             f.LastMissingFieldsHash,
             f.LastRejectEmailAt,
             f.LastRejectHash
-        FROM dbo.Cargos_Frontiera f
+        FROM dbo.Cargos_Contratti_Frontiera f
         WHERE f.ContractNo = s.ContractNo
           AND f.[LineNo] = s.[LineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
@@ -1356,7 +1356,7 @@ BEGIN
       AND NOT EXISTS
     (
         SELECT 1
-        FROM dbo.Cargos_Frontiera f
+        FROM dbo.Cargos_Contratti_Frontiera f
         WHERE f.ContractNo = s.ContractNo
           AND f.[LineNo] = s.[LineNo]
           AND f.SnapshotHash = s.SnapshotHash

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports API_Cargos.Contracts
 
 Namespace Validation

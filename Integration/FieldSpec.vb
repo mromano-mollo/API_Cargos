@@ -1,4 +1,4 @@
-Imports API_Cargos.Contracts
+﻿Imports API_Cargos.Contracts
 
 Namespace Integration
     Public NotInheritable Class FieldSpec

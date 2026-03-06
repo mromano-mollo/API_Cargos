@@ -1,4 +1,4 @@
-## About
+﻿## About
 
 Provides resource pooling of any type for performance-critical applications that allocate and deallocate objects frequently.
 

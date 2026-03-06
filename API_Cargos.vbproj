@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -94,12 +94,12 @@
     <Compile Include="Orchestration\CargosProcessor.vb" />
     <Compile Include="Persistence\IAgencyFrontieraRepository.vb" />
     <Compile Include="Persistence\IAgencySyncRepository.vb" />
-    <Compile Include="Persistence\ICargosFrontieraRepository.vb" />
+    <Compile Include="Persistence\ICargosContrattiFrontieraRepository.vb" />
     <Compile Include="Persistence\ICargosReferenceTableRepository.vb" />
     <Compile Include="Persistence\ISyncRepository.vb" />
     <Compile Include="Persistence\SqlAgencyFrontieraRepository.vb" />
     <Compile Include="Persistence\SqlAgencySyncRepository.vb" />
-    <Compile Include="Persistence\SqlCargosFrontieraRepository.vb" />
+    <Compile Include="Persistence\SqlCargosContrattiFrontieraRepository.vb" />
     <Compile Include="Persistence\SqlCargosReferenceTableRepository.vb" />
     <Compile Include="Persistence\SqlSyncRepository.vb" />
     <Compile Include="Verification\SelfTestRunner.vb" />

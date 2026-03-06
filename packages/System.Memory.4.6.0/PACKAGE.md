@@ -1,4 +1,4 @@
-## About
+﻿## About
 
 Provides types for efficient representation and pooling of managed, stack, and native memory segments and sequences of such segments, along with primitives to parse and format UTF-8 encoded text stored in those memory segments.
 

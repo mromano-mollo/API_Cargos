@@ -1,4 +1,4 @@
-Imports System.Collections.Generic
+﻿Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Net.Http
 Imports System.Text
@@ -127,10 +127,10 @@ Namespace Integration
         Private Shared Function GetDefinitions() As IList(Of CargosReferenceTableDefinition)
             Return New List(Of CargosReferenceTableDefinition) From
             {
-                New CargosReferenceTableDefinition With {.TableId = 2, .TableName = "LUOGHI"},
-                New CargosReferenceTableDefinition With {.TableId = 9, .TableName = "TIPO_VEICOLO"},
-                New CargosReferenceTableDefinition With {.TableId = 10, .TableName = "TIPO_DOCUMENTO"},
-                New CargosReferenceTableDefinition With {.TableId = 11, .TableName = "TIPO_PAGAMENTO"}
+                New CargosReferenceTableDefinition With {.TableId = 0, .TableName = "TIPO_PAGAMENTO"},
+                New CargosReferenceTableDefinition With {.TableId = 1, .TableName = "LUOGHI"},
+                New CargosReferenceTableDefinition With {.TableId = 2, .TableName = "TIPO_VEICOLO"},
+                New CargosReferenceTableDefinition With {.TableId = 3, .TableName = "TIPO_DOCUMENTO"}
             }
         End Function
 

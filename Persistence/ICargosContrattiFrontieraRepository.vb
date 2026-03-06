@@ -1,7 +1,7 @@
-Imports API_Cargos.Contracts
+﻿Imports API_Cargos.Contracts
 
 Namespace Persistence
-    Public Interface ICargosFrontieraRepository
+    Public Interface ICargosContrattiFrontieraRepository
         Function ClaimEligible(maxItems As Integer, workerId As String, claimTimeoutMinutes As Integer, includeCheckOk As Boolean) As IList(Of OutboxRecord)
         Sub RegisterAttempt(itemId As Long)
         Sub SetReadyToSend(itemId As Long, recordLine As String)

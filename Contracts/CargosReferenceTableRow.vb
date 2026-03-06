@@ -1,4 +1,4 @@
-Namespace Contracts
+﻿Namespace Contracts
     Public NotInheritable Class CargosReferenceTableRow
         Public Property RowNumber As Integer
         Public Property Code As String

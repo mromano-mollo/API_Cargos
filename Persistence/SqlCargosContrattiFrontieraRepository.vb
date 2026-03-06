@@ -1,9 +1,9 @@
-Imports System.Data.SqlClient
+﻿Imports System.Data.SqlClient
 Imports API_Cargos.Contracts
 
 Namespace Persistence
-    Public NotInheritable Class SqlCargosFrontieraRepository
-        Implements ICargosFrontieraRepository
+    Public NotInheritable Class SqlCargosContrattiFrontieraRepository
+        Implements ICargosContrattiFrontieraRepository
 
         Private ReadOnly _connectionString As String
         Private ReadOnly _commandTimeoutSeconds As Integer
@@ -13,7 +13,7 @@ Namespace Persistence
             _commandTimeoutSeconds = commandTimeoutSeconds
         End Sub
 
-        Public Function ClaimEligible(maxItems As Integer, workerId As String, claimTimeoutMinutes As Integer, includeCheckOk As Boolean) As IList(Of OutboxRecord) Implements ICargosFrontieraRepository.ClaimEligible
+        Public Function ClaimEligible(maxItems As Integer, workerId As String, claimTimeoutMinutes As Integer, includeCheckOk As Boolean) As IList(Of OutboxRecord) Implements ICargosContrattiFrontieraRepository.ClaimEligible
             Dim items As New List(Of OutboxRecord)()
             Dim take As Integer = Math.Max(1, maxItems)
             Dim staleBeforeUtc As DateTime = DateTime.UtcNow.AddMinutes(-Math.Max(1, claimTimeoutMinutes))
@@ -26,7 +26,7 @@ Namespace Persistence
 "            PARTITION BY f.ContractNo, f.LineNo" & vbCrLf &
 "            ORDER BY f.CreatedAt DESC, f.Id DESC" & vbCrLf &
 "        ) AS rn" & vbCrLf &
-"    FROM dbo.Cargos_Frontiera f" & vbCrLf &
+"    FROM dbo.Cargos_Contratti_Frontiera f" & vbCrLf &
 "), Candidates AS (" & vbCrLf &
 "    SELECT TOP (@Take) l.Id" & vbCrLf &
 "    FROM Latest l" & vbCrLf &
@@ -93,7 +93,7 @@ Namespace Persistence
 "    inserted.LastRejectEmailAt," & vbCrLf &
 "    inserted.LastRejectHash," & vbCrLf &
 "    inserted.CreatedAt" & vbCrLf &
-"FROM dbo.Cargos_Frontiera f" & vbCrLf &
+"FROM dbo.Cargos_Contratti_Frontiera f" & vbCrLf &
 "INNER JOIN Candidates c ON c.Id = f.Id;"
 
             Using connection As New SqlConnection(_connectionString)
@@ -119,9 +119,9 @@ Namespace Persistence
             Return items
         End Function
 
-        Public Sub RegisterAttempt(itemId As Long) Implements ICargosFrontieraRepository.RegisterAttempt
+        Public Sub RegisterAttempt(itemId As Long) Implements ICargosContrattiFrontieraRepository.RegisterAttempt
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET AttemptCount = AttemptCount + 1," & vbCrLf &
                 "    LastAttemptAt = @NowUtc," & vbCrLf &
                 "    UpdatedAt = @NowUtc" & vbCrLf &
@@ -133,9 +133,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetReadyToSend(itemId As Long, recordLine As String) Implements ICargosFrontieraRepository.SetReadyToSend
+        Public Sub SetReadyToSend(itemId As Long, recordLine As String) Implements ICargosContrattiFrontieraRepository.SetReadyToSend
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'READY_TO_SEND'," & vbCrLf &
                 "    RecordLine = @RecordLine," & vbCrLf &
                 "    MissingFields = NULL," & vbCrLf &
@@ -150,9 +150,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetMissingData(itemId As Long, missingFields As IList(Of String), lastError As String) Implements ICargosFrontieraRepository.SetMissingData
+        Public Sub SetMissingData(itemId As Long, missingFields As IList(Of String), lastError As String) Implements ICargosContrattiFrontieraRepository.SetMissingData
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'MISSING_DATA'," & vbCrLf &
                 "    MissingFields = @MissingFields," & vbCrLf &
                 "    LastError = @LastError," & vbCrLf &
@@ -170,9 +170,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetCheckOk(itemId As Long) Implements ICargosFrontieraRepository.SetCheckOk
+        Public Sub SetCheckOk(itemId As Long) Implements ICargosContrattiFrontieraRepository.SetCheckOk
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'CHECK_OK'," & vbCrLf &
                 "    LastError = NULL," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
@@ -186,9 +186,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetSentOk(itemId As Long, transactionId As String) Implements ICargosFrontieraRepository.SetSentOk
+        Public Sub SetSentOk(itemId As Long, transactionId As String) Implements ICargosContrattiFrontieraRepository.SetSentOk
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'SENT_OK'," & vbCrLf &
                 "    TransactionId = @TransactionId," & vbCrLf &
                 "    MissingFields = NULL," & vbCrLf &
@@ -206,9 +206,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetDataError(itemId As Long, lastError As String) Implements ICargosFrontieraRepository.SetDataError
+        Public Sub SetDataError(itemId As Long, lastError As String) Implements ICargosContrattiFrontieraRepository.SetDataError
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'SENT_KO_DATA'," & vbCrLf &
                 "    LastError = @LastError," & vbCrLf &
                 "    NextRetryAt = NULL," & vbCrLf &
@@ -224,9 +224,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub SetRetry(itemId As Long, lastError As String, nextRetryAt As DateTime) Implements ICargosFrontieraRepository.SetRetry
+        Public Sub SetRetry(itemId As Long, lastError As String, nextRetryAt As DateTime) Implements ICargosContrattiFrontieraRepository.SetRetry
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET Status = 'SENT_KO_RETRY'," & vbCrLf &
                 "    LastError = @LastError," & vbCrLf &
                 "    NextRetryAt = @NextRetryAt," & vbCrLf &
@@ -243,9 +243,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub MarkMissingEmailSent(itemId As Long, missingFieldsHash As String) Implements ICargosFrontieraRepository.MarkMissingEmailSent
+        Public Sub MarkMissingEmailSent(itemId As Long, missingFieldsHash As String) Implements ICargosContrattiFrontieraRepository.MarkMissingEmailSent
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET LastMissingEmailAt = @NowUtc," & vbCrLf &
                 "    LastMissingFieldsHash = @DetailHash," & vbCrLf &
                 "    UpdatedAt = @NowUtc" & vbCrLf &
@@ -258,9 +258,9 @@ Namespace Persistence
             )
         End Sub
 
-        Public Sub MarkRejectEmailSent(itemId As Long, rejectHash As String) Implements ICargosFrontieraRepository.MarkRejectEmailSent
+        Public Sub MarkRejectEmailSent(itemId As Long, rejectHash As String) Implements ICargosContrattiFrontieraRepository.MarkRejectEmailSent
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Frontiera" & vbCrLf &
+                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET LastRejectEmailAt = @NowUtc," & vbCrLf &
                 "    LastRejectHash = @DetailHash," & vbCrLf &
                 "    UpdatedAt = @NowUtc" & vbCrLf &
