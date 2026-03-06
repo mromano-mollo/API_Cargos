@@ -57,6 +57,7 @@ BEGIN
         LineNo BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
+        BranchEmail NVARCHAR(255) NULL,
         ContrattoId NVARCHAR(10) NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) NULL,
@@ -87,6 +88,8 @@ BEGIN
         ConducenteContraentePatenteNumero NVARCHAR(20) NULL,
         ConducenteContraentePatenteLuogorilCod NVARCHAR(9) NULL,
         RecordLine NVARCHAR(2000) NULL,
+        DateFingerprint NVARCHAR(128) NOT NULL,
+        PayloadFingerprint NVARCHAR(128) NOT NULL,
         DataFingerprint NVARCHAR(128) NOT NULL,
         LastQueuedFingerprint NVARCHAR(128) NULL,
         LastQueuedAt DATETIME2 NULL,
@@ -109,6 +112,7 @@ BEGIN
         LineNo BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
+        BranchEmail NVARCHAR(255) NULL,
         ContrattoId NVARCHAR(10) NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) NULL,
@@ -148,6 +152,8 @@ BEGIN
         AttemptCount INT NOT NULL CONSTRAINT DF_Cargos_Frontiera_AttemptCount DEFAULT (0),
         LastAttemptAt DATETIME2 NULL,
         NextRetryAt DATETIME2 NULL,
+        ClaimedBy NVARCHAR(100) NULL,
+        ClaimedAt DATETIME2 NULL,
         LastMissingEmailAt DATETIME2 NULL,
         LastMissingFieldsHash NVARCHAR(128) NULL,
         LastRejectEmailAt DATETIME2 NULL,
@@ -176,6 +182,7 @@ BEGIN
         (N'LineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Contratti_LineNo DEFAULT (0)'),
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_CargosContractId DEFAULT (N'''')'),
         (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_BranchId DEFAULT (N'''')'),
+        (N'BranchEmail', N'NVARCHAR(255) NULL'),
         (N'ContrattoId', N'NVARCHAR(10) NULL'),
         (N'ContrattoData', N'DATETIME2(0) NULL'),
         (N'ContrattoTipoP', N'NVARCHAR(1) NULL'),
@@ -206,6 +213,8 @@ BEGIN
         (N'ConducenteContraentePatenteNumero', N'NVARCHAR(20) NULL'),
         (N'ConducenteContraentePatenteLuogorilCod', N'NVARCHAR(9) NULL'),
         (N'RecordLine', N'NVARCHAR(2000) NULL'),
+        (N'DateFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_DateFingerprint DEFAULT (N'''')'),
+        (N'PayloadFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_PayloadFingerprint DEFAULT (N'''')'),
         (N'DataFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_DataFingerprint DEFAULT (N'''')'),
         (N'LastQueuedFingerprint', N'NVARCHAR(128) NULL'),
         (N'LastQueuedAt', N'DATETIME2 NULL'),
@@ -260,6 +269,7 @@ BEGIN
         (N'LineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Frontiera_LineNo DEFAULT (0)'),
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Frontiera_CargosContractId DEFAULT (N'''')'),
         (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Frontiera_BranchId DEFAULT (N'''')'),
+        (N'BranchEmail', N'NVARCHAR(255) NULL'),
         (N'ContrattoId', N'NVARCHAR(10) NULL'),
         (N'ContrattoData', N'DATETIME2(0) NULL'),
         (N'ContrattoTipoP', N'NVARCHAR(1) NULL'),
@@ -299,6 +309,8 @@ BEGIN
         (N'AttemptCount', N'INT NOT NULL CONSTRAINT DF_Cargos_Frontiera_AttemptCount_Migrate DEFAULT (0)'),
         (N'LastAttemptAt', N'DATETIME2 NULL'),
         (N'NextRetryAt', N'DATETIME2 NULL'),
+        (N'ClaimedBy', N'NVARCHAR(100) NULL'),
+        (N'ClaimedAt', N'DATETIME2 NULL'),
         (N'LastMissingEmailAt', N'DATETIME2 NULL'),
         (N'LastMissingFieldsHash', N'NVARCHAR(128) NULL'),
         (N'LastRejectEmailAt', N'DATETIME2 NULL'),
@@ -402,6 +414,7 @@ BEGIN
     DECLARE @ContractNoExpression NVARCHAR(256);
     DECLARE @LineNoExpression NVARCHAR(256);
     DECLARE @CargosContractIdExpression NVARCHAR(256);
+    DECLARE @BranchEmailExpression NVARCHAR(256) = N'NULL';
     DECLARE @RecordLineExpression NVARCHAR(256) = N'NULL';
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'ContractNo') IS NOT NULL
@@ -425,6 +438,9 @@ BEGIN
     ELSE
         SET @CargosContractIdExpression = @ContractNoExpression;
 
+    IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'BranchEmail') IS NOT NULL
+        SET @BranchEmailExpression = N'CAST(v.BranchEmail AS NVARCHAR(255))';
+
     IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'RecordLine') IS NOT NULL
         SET @RecordLineExpression = N'CAST(v.RecordLine AS NVARCHAR(2000))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'CargosRecordLine') IS NOT NULL
@@ -446,6 +462,7 @@ BEGIN
         LineNo BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
+        BranchEmail NVARCHAR(255) NULL,
         ContrattoId NVARCHAR(10) NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) NULL,
@@ -476,14 +493,16 @@ BEGIN
         ConducenteContraentePatenteNumero NVARCHAR(20) NULL,
         ConducenteContraentePatenteLuogorilCod NVARCHAR(9) NULL,
         RecordLine NVARCHAR(2000) NULL,
-        SnapshotHash NVARCHAR(128) NOT NULL,
-        QueueReason NVARCHAR(30) NOT NULL
+        DateFingerprint NVARCHAR(128) NULL,
+        PayloadFingerprint NVARCHAR(128) NULL,
+        SnapshotHash NVARCHAR(128) NULL,
+        QueueReason NVARCHAR(30) NULL
     );
 
     DECLARE @Sql NVARCHAR(MAX) = N'
         INSERT INTO #SourceContracts
         (
-            ContractNo, LineNo, CargosContractId, BranchId,
+            ContractNo, LineNo, CargosContractId, BranchId, BranchEmail,
             ContrattoId, ContrattoData, ContrattoTipoP,
             ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
             ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -493,13 +512,14 @@ BEGIN
             ConducenteContraenteNascitaLuogoCod, ConducenteContraenteCittadinanzaCod,
             ConducenteContraenteDocideTipoCod, ConducenteContraenteDocideNumero,
             ConducenteContraenteDocideLuogorilCod, ConducenteContraentePatenteNumero,
-            ConducenteContraentePatenteLuogorilCod, RecordLine, SnapshotHash, QueueReason
+            ConducenteContraentePatenteLuogorilCod, RecordLine
         )
         SELECT
             ' + @ContractNoExpression + N',
             ' + @LineNoExpression + N',
             CAST(ISNULL(' + @CargosContractIdExpression + N', ' + @ContractNoExpression + N') AS NVARCHAR(50)),
             CAST(v.BranchId AS NVARCHAR(50)),
+            ' + @BranchEmailExpression + N',
             CAST(v.CONTRATTO_ID AS NVARCHAR(10)),
             TRY_CAST(v.CONTRATTO_DATA AS DATETIME2(0)),
             CAST(v.CONTRATTO_TIPOP AS NVARCHAR(1)),
@@ -529,26 +549,107 @@ BEGIN
             CAST(v.CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD AS NVARCHAR(9)),
             CAST(v.CONDUCENTE_CONTRAENTE_PATENTE_NUMERO AS NVARCHAR(20)),
             CAST(v.CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD AS NVARCHAR(9)),
-            ' + @RecordLineExpression + N',
-            CONVERT(
-                NVARCHAR(128),
-                HASHBYTES(
-                    ''SHA2_256'',
-                    CONCAT(
-                        ISNULL(CONVERT(VARCHAR(33), TRY_CAST(v.CONTRATTO_CHECKIN_DATA AS DATETIME2(0)), 126), ''''),
-                        ''|'',
-                        ISNULL(CONVERT(VARCHAR(33), TRY_CAST(v.CONTRATTO_CHECKOUT_DATA AS DATETIME2(0)), 126), '''')
-                    )
-                ),
-                2
-            ),
-            CASE WHEN c.ContractNo IS NULL THEN ''INITIAL_SEND'' ELSE ''DATE_CHANGE'' END
-        FROM dbo.Cargos_Vista_Contratti v
-        LEFT JOIN dbo.Cargos_Contratti c
-            ON c.ContractNo = ' + @ContractNoExpression + N'
-           AND c.LineNo = ' + @LineNoExpression + N';';
+            ' + @RecordLineExpression + N'
+        FROM dbo.Cargos_Vista_Contratti v;';
 
     EXEC sys.sp_executesql @Sql;
+
+    UPDATE s
+    SET
+        s.DateFingerprint = CONVERT(
+            NVARCHAR(128),
+            HASHBYTES(
+                'SHA2_256',
+                CONCAT(
+                    ISNULL(CONVERT(VARCHAR(33), s.ContrattoCheckinData, 126), ''),
+                    '|',
+                    ISNULL(CONVERT(VARCHAR(33), s.ContrattoCheckoutData, 126), '')
+                )
+            ),
+            2
+        ),
+        s.PayloadFingerprint = CONVERT(
+            NVARCHAR(128),
+            HASHBYTES(
+                'SHA2_256',
+                CONCAT(
+                    ISNULL(s.CargosContractId, ''), '|',
+                    ISNULL(s.BranchId, ''), '|',
+                    ISNULL(s.BranchEmail, ''), '|',
+                    ISNULL(s.ContrattoId, ''), '|',
+                    ISNULL(CONVERT(VARCHAR(33), s.ContrattoData, 126), ''), '|',
+                    ISNULL(s.ContrattoTipoP, ''), '|',
+                    ISNULL(CONVERT(VARCHAR(33), s.ContrattoCheckoutData, 126), ''), '|',
+                    ISNULL(s.ContrattoCheckoutLuogoCod, ''), '|',
+                    ISNULL(s.ContrattoCheckoutIndirizzo, ''), '|',
+                    ISNULL(CONVERT(VARCHAR(33), s.ContrattoCheckinData, 126), ''), '|',
+                    ISNULL(s.ContrattoCheckinLuogoCod, ''), '|',
+                    ISNULL(s.ContrattoCheckinIndirizzo, ''), '|',
+                    ISNULL(s.OperatoreId, ''), '|',
+                    ISNULL(s.AgenziaId, ''), '|',
+                    ISNULL(s.AgenziaNome, ''), '|',
+                    ISNULL(s.AgenziaLuogoCod, ''), '|',
+                    ISNULL(s.AgenziaIndirizzo, ''), '|',
+                    ISNULL(s.AgenziaRecapitoTel, ''), '|',
+                    ISNULL(s.VeicoloTipo, ''), '|',
+                    ISNULL(s.VeicoloMarca, ''), '|',
+                    ISNULL(s.VeicoloModello, ''), '|',
+                    ISNULL(s.VeicoloTarga, ''), '|',
+                    ISNULL(s.ConducenteContraenteCognome, ''), '|',
+                    ISNULL(s.ConducenteContraenteNome, ''), '|',
+                    ISNULL(CONVERT(VARCHAR(33), s.ConducenteContraenteNascitaData, 126), ''), '|',
+                    ISNULL(s.ConducenteContraenteNascitaLuogoCod, ''), '|',
+                    ISNULL(s.ConducenteContraenteCittadinanzaCod, ''), '|',
+                    ISNULL(s.ConducenteContraenteDocideTipoCod, ''), '|',
+                    ISNULL(s.ConducenteContraenteDocideNumero, ''), '|',
+                    ISNULL(s.ConducenteContraenteDocideLuogorilCod, ''), '|',
+                    ISNULL(s.ConducenteContraentePatenteNumero, ''), '|',
+                    ISNULL(s.ConducenteContraentePatenteLuogorilCod, '')
+                )
+            ),
+            2
+        )
+    FROM #SourceContracts s;
+
+    UPDATE s
+    SET
+        s.SnapshotHash = CONVERT(
+            NVARCHAR(128),
+            HASHBYTES(
+                'SHA2_256',
+                CONCAT(
+                    ISNULL(s.DateFingerprint, ''),
+                    '|',
+                    ISNULL(s.PayloadFingerprint, '')
+                )
+            ),
+            2
+        )
+    FROM #SourceContracts s;
+
+    UPDATE s
+    SET
+        s.QueueReason =
+            CASE
+                WHEN c.ContractNo IS NULL OR c.LastQueuedFingerprint IS NULL THEN 'INITIAL_SEND'
+                WHEN ISNULL(c.DateFingerprint, '') <> ISNULL(s.DateFingerprint, '') THEN 'DATE_CHANGE'
+                WHEN ISNULL(c.LastQueuedFingerprint, '') <> ISNULL(s.SnapshotHash, '')
+                     AND ISNULL(lastf.Status, '') <> 'SENT_OK' THEN 'DATA_FIX'
+                ELSE NULL
+            END
+    FROM #SourceContracts s
+    LEFT JOIN dbo.Cargos_Contratti c
+        ON c.ContractNo = s.ContractNo
+       AND c.LineNo = s.LineNo
+    OUTER APPLY
+    (
+        SELECT TOP (1)
+            f.Status
+        FROM dbo.Cargos_Frontiera f
+        WHERE f.ContractNo = s.ContractNo
+          AND f.LineNo = s.LineNo
+        ORDER BY f.CreatedAt DESC, f.Id DESC
+    ) lastf;
 
     MERGE dbo.Cargos_Contratti AS tgt
     USING #SourceContracts AS src
@@ -558,6 +659,7 @@ BEGIN
         UPDATE SET
             tgt.CargosContractId = src.CargosContractId,
             tgt.BranchId = src.BranchId,
+            tgt.BranchEmail = src.BranchEmail,
             tgt.ContrattoId = src.ContrattoId,
             tgt.ContrattoData = src.ContrattoData,
             tgt.ContrattoTipoP = src.ContrattoTipoP,
@@ -588,13 +690,15 @@ BEGIN
             tgt.ConducenteContraentePatenteNumero = src.ConducenteContraentePatenteNumero,
             tgt.ConducenteContraentePatenteLuogorilCod = src.ConducenteContraentePatenteLuogorilCod,
             tgt.RecordLine = src.RecordLine,
+            tgt.DateFingerprint = src.DateFingerprint,
+            tgt.PayloadFingerprint = src.PayloadFingerprint,
             tgt.DataFingerprint = src.SnapshotHash,
             tgt.LastSeenAt = @NowUtc,
             tgt.UpdatedAt = @NowUtc
     WHEN NOT MATCHED THEN
         INSERT
         (
-            ContractNo, LineNo, CargosContractId, BranchId,
+            ContractNo, LineNo, CargosContractId, BranchId, BranchEmail,
             ContrattoId, ContrattoData, ContrattoTipoP,
             ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
             ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -605,11 +709,12 @@ BEGIN
             ConducenteContraenteDocideTipoCod, ConducenteContraenteDocideNumero,
             ConducenteContraenteDocideLuogorilCod, ConducenteContraentePatenteNumero,
             ConducenteContraentePatenteLuogorilCod,
-            RecordLine, DataFingerprint, LastQueuedFingerprint, LastQueuedAt, LastSeenAt, CreatedAt, UpdatedAt
+            RecordLine, DateFingerprint, PayloadFingerprint, DataFingerprint,
+            LastQueuedFingerprint, LastQueuedAt, LastSeenAt, CreatedAt, UpdatedAt
         )
         VALUES
         (
-            src.ContractNo, src.LineNo, src.CargosContractId, src.BranchId,
+            src.ContractNo, src.LineNo, src.CargosContractId, src.BranchId, src.BranchEmail,
             src.ContrattoId, src.ContrattoData, src.ContrattoTipoP,
             src.ContrattoCheckoutData, src.ContrattoCheckoutLuogoCod, src.ContrattoCheckoutIndirizzo,
             src.ContrattoCheckinData, src.ContrattoCheckinLuogoCod, src.ContrattoCheckinIndirizzo,
@@ -620,12 +725,13 @@ BEGIN
             src.ConducenteContraenteDocideTipoCod, src.ConducenteContraenteDocideNumero,
             src.ConducenteContraenteDocideLuogorilCod, src.ConducenteContraentePatenteNumero,
             src.ConducenteContraentePatenteLuogorilCod,
-            src.RecordLine, src.SnapshotHash, NULL, NULL, @NowUtc, @NowUtc, @NowUtc
+            src.RecordLine, src.DateFingerprint, src.PayloadFingerprint, src.SnapshotHash,
+            NULL, NULL, @NowUtc, @NowUtc, @NowUtc
         );
 
     INSERT INTO dbo.Cargos_Frontiera
     (
-        ContractNo, LineNo, CargosContractId, BranchId,
+        ContractNo, LineNo, CargosContractId, BranchId, BranchEmail,
         ContrattoId, ContrattoData, ContrattoTipoP,
         ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
         ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -636,12 +742,14 @@ BEGIN
         ConducenteContraenteDocideTipoCod, ConducenteContraenteDocideNumero,
         ConducenteContraenteDocideLuogorilCod, ConducenteContraentePatenteNumero,
         ConducenteContraentePatenteLuogorilCod,
-        Reason, SnapshotHash, RecordLine, Status, AttemptCount, CreatedAt, UpdatedAt
+        Reason, SnapshotHash, RecordLine, Status, AttemptCount,
+        LastMissingEmailAt, LastMissingFieldsHash, LastRejectEmailAt, LastRejectHash,
+        CreatedAt, UpdatedAt
     )
     OUTPUT inserted.ContractNo, inserted.LineNo, inserted.SnapshotHash
         INTO @Queued (ContractNo, LineNo, SnapshotHash)
     SELECT
-        s.ContractNo, s.LineNo, s.CargosContractId, s.BranchId,
+        s.ContractNo, s.LineNo, s.CargosContractId, s.BranchId, s.BranchEmail,
         s.ContrattoId, s.ContrattoData, s.ContrattoTipoP,
         s.ContrattoCheckoutData, s.ContrattoCheckoutLuogoCod, s.ContrattoCheckoutIndirizzo,
         s.ContrattoCheckinData, s.ContrattoCheckinLuogoCod, s.ContrattoCheckinIndirizzo,
@@ -652,9 +760,24 @@ BEGIN
         s.ConducenteContraenteDocideTipoCod, s.ConducenteContraenteDocideNumero,
         s.ConducenteContraenteDocideLuogorilCod, s.ConducenteContraentePatenteNumero,
         s.ConducenteContraentePatenteLuogorilCod,
-        s.QueueReason, s.SnapshotHash, s.RecordLine, 'PENDING', 0, @NowUtc, @NowUtc
+        s.QueueReason, s.SnapshotHash, s.RecordLine, 'PENDING', 0,
+        lastf.LastMissingEmailAt, lastf.LastMissingFieldsHash, lastf.LastRejectEmailAt, lastf.LastRejectHash,
+        @NowUtc, @NowUtc
     FROM #SourceContracts s
-    WHERE NOT EXISTS
+    OUTER APPLY
+    (
+        SELECT TOP (1)
+            f.LastMissingEmailAt,
+            f.LastMissingFieldsHash,
+            f.LastRejectEmailAt,
+            f.LastRejectHash
+        FROM dbo.Cargos_Frontiera f
+        WHERE f.ContractNo = s.ContractNo
+          AND f.LineNo = s.LineNo
+        ORDER BY f.CreatedAt DESC, f.Id DESC
+    ) lastf
+    WHERE s.QueueReason IS NOT NULL
+      AND NOT EXISTS
     (
         SELECT 1
         FROM dbo.Cargos_Frontiera f

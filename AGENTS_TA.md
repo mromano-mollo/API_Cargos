@@ -38,8 +38,9 @@ This document keeps the same functional scope and acceptance criteria, but adapt
 
 The FA requirements remain unchanged. Technical adaptation:
 - Keep all logic in the current project but organize by domain boundaries.
-- Implement orchestration as console batch execution (single run), schedulable via Windows Task Scheduler.
+- Implement orchestration as a long-running single-instance loop inside the console process.
 - Prefer DB-driven sync/enqueue: app calls SQL procedure `Cargos_Sync_Contratti_Frontiera` at run start.
+- The host performs one processor cycle, sleeps for a short interval, and stops at configured cutoff time.
 - SQL Agent can execute the same procedure independently only as optional operational fallback.
 - Optional evolution path: keep code host-agnostic so it can later move to Windows Service/Worker with minimal refactor.
 
@@ -97,22 +98,24 @@ Suggested structure inside `API_Cargos` project:
 This keeps a single deployable EXE while preserving responsibilities.
 
 ## 3.2 Main execution model
-Preferred initial mode: one-shot run.
+Preferred mode: long-running single-instance process.
 1. Start process.
 2. Load/validate configuration.
-3. Execute sync procedure `Cargos_Sync_Contratti_Frontiera` (extract from `Cargos_Vista_Contratti`, upsert `Cargos_Contratti`, enqueue `Cargos_Frontiera`).
-4. Fetch eligible outbox records from `Cargos_Frontiera`.
-5. Validate mandatory/conditional data.
-6. Notify branch on missing mandatory fields.
-7. Build fixed-width record lines.
-8. Batch by 100.
-9. Optional `/api/Check`.
-10. `/api/Send`.
-11. Persist per-record outcomes.
-12. Send rejection email for data errors.
-13. Exit with result code.
+3. Enter loop while service status is active and local time is before configured cutoff (for example 22:00).
+4. Inside each cycle:
+   - execute sync procedure `Cargos_Sync_Contratti_Frontiera`;
+   - fetch eligible outbox records from `Cargos_Frontiera`;
+   - validate mandatory/conditional data;
+   - notify branch on missing mandatory fields;
+   - build fixed-width record lines;
+   - batch by 100;
+   - optional `/api/Check`;
+   - `/api/Send`;
+   - persist per-record outcomes.
+5. Sleep short interval between cycles (for example 10 seconds).
+6. Exit gracefully when cutoff time is reached or service status becomes false.
 
-Scheduling: Task Scheduler every N minutes.
+Operational rule: only one active instance is allowed.
 
 ---
 
@@ -141,7 +144,8 @@ Core fields:
 - `CargosContractId`
 - `BranchId`
 - all mandatory CaRGOS payload fields
-- `DataFingerprint` (normalized hash from checkin/checkout)
+- `DateFingerprint` (normalized hash from checkin/checkout)
+- `PayloadFingerprint` (normalized hash from mandatory payload fields used by validation/record build)
 - `LastQueuedFingerprint`
 - `LastQueuedAt`
 - `LastSeenAt`
@@ -152,7 +156,7 @@ Core fields:
 - `CargosContractId`
 - `BranchId`
 - same mandatory payload columns copied from snapshot at enqueue time
-- `Reason` (`INITIAL_SEND` | `DATE_CHANGE`)
+- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
 - `SnapshotHash`
 - `Status`
 - `MissingFields`
@@ -175,6 +179,8 @@ Core fields:
 - Eligibility predicate:
   - status in `PENDING`, `READY_TO_SEND`, `SENT_KO_RETRY`
   - `NextRetryAt IS NULL OR NextRetryAt <= NOW`
+- `CHECK_OK` is claimable only when `CheckOnly=False`.
+- `SnapshotHash` should represent the full queue-triggering snapshot, not only checkin/checkout, so the system can requeue a contract after a data fix even if dates stay unchanged.
 
 ### CaRGOS fields to send (source: P2 tracciato record)
 The following matrix must be tracked in TA and used as source for view mapping + validation.
@@ -240,6 +246,7 @@ Statuses:
 - `PENDING`
 - `MISSING_DATA`
 - `READY_TO_SEND`
+- `CHECK_OK`
 - `SENT_OK`
 - `SENT_KO_RETRY`
 - `SENT_KO_DATA`
@@ -247,18 +254,26 @@ Statuses:
 Transition rules:
 - `PENDING -> MISSING_DATA` on validation failure.
 - `PENDING -> READY_TO_SEND` on valid record.
+- `READY_TO_SEND -> CHECK_OK` when `CheckOnly=True` and CaRGOS check succeeds.
+- `CHECK_OK -> SENT_OK` when `CheckOnly=False` and the same row is later sent successfully.
 - `READY_TO_SEND -> SENT_OK` on per-line success.
 - `READY_TO_SEND -> SENT_KO_DATA` on per-line data rejection.
 - `READY_TO_SEND -> SENT_KO_RETRY` on transport/system failure.
 - `SENT_KO_RETRY -> READY_TO_SEND` when retry time arrives and data still valid.
 - `MISSING_DATA -> READY_TO_SEND` when missing data resolved.
+- `SENT_KO_DATA -> READY_TO_SEND` when rejected payload data is corrected.
 
 ## 4.4 Mandatory validation engine
 Validation pipeline:
-1. Mandatory fields presence (from official CaRGOS spec mapping).
-2. Conditional mandatory rules.
-3. Format rules (dates, numeric patterns, max length).
-4. Second-driver "all or nothing" consistency.
+1. SQL/view prevalidation for cheap deterministic checks:
+   - obvious mandatory-field presence from source DB;
+   - basic data availability checks;
+   - optional precomputed missing-fields metadata for logging/diagnostics.
+2. App validation as authoritative final gate:
+   - mandatory fields presence (from official CaRGOS spec mapping);
+   - conditional mandatory rules;
+   - format rules (dates, numeric patterns, max length);
+   - second-driver "all or nothing" consistency.
 
 Output object:
 - `IsValid As Boolean`
@@ -268,6 +283,7 @@ Output object:
 Implementation detail:
 - Keep field metadata in a structured mapping file (JSON/CSV) versioned in repository.
 - Separate field metadata from business rules to simplify updates when police record layout changes.
+- SQL/view validation reduces noise and queue volume, but it must never replace the app validation step.
 
 ## 4.5 RecordBuilder (fixed-width 1505)
 Requirements:
@@ -392,6 +408,7 @@ Required keys:
 - `Cargos.Password`
 - `Cargos.ApiKey`
 - `Cargos.UseCheckEndpoint`
+- `Cargos.CheckOnly`
 - `Db.ContractsViewName` (default `Cargos_Vista_Contratti`, used by sync procedure)
 - `Db.ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`)
 - `Worker.PollingIntervalSeconds` (if loop mode is enabled)
@@ -439,32 +456,44 @@ Correlation:
    - read `Cargos_Vista_Contratti` (signed + delivered line)
    - upsert `Cargos_Contratti`
    - enqueue `PENDING` rows in `Cargos_Frontiera` with:
-     - `Reason = INITIAL_SEND` for first occurrence
-     - `Reason = DATE_CHANGE` for changed checkin/checkout
+      - `Reason = INITIAL_SEND` for first occurrence
+      - `Reason = DATE_CHANGE` for changed checkin/checkout
+      - `Reason = DATA_FIX` for payload corrections on rows previously blocked/rejected
 3. `OutboxRepository.GetEligible()` from `Cargos_Frontiera`.
 4. Build domain input DTOs.
-5. `ValidationService.Validate()` per contract.
-6. Invalid:
+5. Apply SQL/view prevalidation metadata if available.
+6. `ValidationService.Validate()` per contract as final gate.
+7. Invalid:
    - update status `MISSING_DATA`
    - apply notification policy and email if allowed
-7. Valid:
+8. Valid:
    - status `READY_TO_SEND`
    - build 1505 line
-8. Chunk valid lines into batches of 100.
-9. If `UseCheckEndpoint=True`: call Check and handle data errors.
-10. Call Send for remaining lines.
-11. Parse per-line outcome:
-   - success -> `SENT_OK` + `TransactionId`
-   - data reject -> `SENT_KO_DATA` + email policy
-12. On technical failure of whole call:
-   - mark impacted records as `SENT_KO_RETRY`
-   - schedule `NextRetryAt`
+9. Chunk valid lines into batches of 100.
+10. If `UseCheckEndpoint=True`: call Check and handle data errors.
+11. If `CheckOnly=True`: stop after successful Check and persist `CHECK_OK`.
+12. Otherwise call Send for remaining lines.
+13. Parse per-line outcome:
+    - success -> `SENT_OK` + `TransactionId`
+    - data reject -> `SENT_KO_DATA` + email policy
+14. On technical failure of whole call:
+    - mark impacted records as `SENT_KO_RETRY`
+    - schedule `NextRetryAt`
+
+## 7.1B Service loop
+1. Host starts once.
+2. Execute one processor cycle.
+3. Sleep configured interval (for example 10 seconds).
+4. Repeat while service status is true and local time is before cutoff.
+5. Prevent overlapping instances through single-instance guard.
 
 ## 7.2 Duplicate-send prevention
 Before send, enforce:
 - status eligibility
 - not already `SENT_OK`
 - no duplicate `(ContractNo, LineNo, SnapshotHash)` in queue
+- worker claim/reservation step before send
+- do not pick an older retry row if a newer snapshot already exists for the same contract-line
 - optional optimistic concurrency with `UpdatedAt`/row version
 
 ---
@@ -484,7 +513,8 @@ CREATE TABLE dbo.Cargos_Contratti (
     -- mandatory CaRGOS payload columns (Contratto*, OperatoreId, Agenzia*, Veicolo*, Conducente*)
     ContrattoCheckinData DATETIME2 NULL,
     ContrattoCheckoutData DATETIME2 NULL,
-    DataFingerprint NVARCHAR(128) NOT NULL,
+    DateFingerprint NVARCHAR(128) NOT NULL,
+    PayloadFingerprint NVARCHAR(128) NOT NULL,
     LastQueuedFingerprint NVARCHAR(128) NULL,
     LastQueuedAt DATETIME2 NULL,
     LastSeenAt DATETIME2 NOT NULL,
@@ -500,7 +530,7 @@ CREATE TABLE dbo.Cargos_Frontiera (
     CargosContractId NVARCHAR(50) NOT NULL,
     BranchId NVARCHAR(50) NOT NULL,
     -- same mandatory CaRGOS payload columns snapshot
-    Reason NVARCHAR(30) NOT NULL,
+    Reason NVARCHAR(30) NOT NULL, -- INITIAL_SEND | DATE_CHANGE | DATA_FIX
     SnapshotHash NVARCHAR(128) NOT NULL,
     Status NVARCHAR(30) NOT NULL,
     MissingFields NVARCHAR(MAX) NULL,
@@ -589,7 +619,37 @@ Notes:
 - Add tests and edge-case handling.
 - Prepare operational runbook (Task Scheduler, config, secrets).
 
-## Tracked implemented updates (as of 2026-03-05)
+## Priority plan for current codebase
+1. Fix queue processing correctness.
+   - Add worker claim/reservation for eligible rows.
+   - Ensure selection ignores obsolete retries when a newer snapshot exists.
+   - Keep single-instance runtime as a hard operational rule.
+2. Implement dual validation end to end.
+   - Add SQL/view prevalidation output.
+   - Add app `ValidationService`.
+   - Persist `MISSING_DATA`, `MissingFields`, and notification anti-spam fields correctly.
+3. Implement payload-correction reprocessing.
+   - Introduce payload-based fingerprint/change detection in addition to date-based detection.
+   - Enqueue `DATA_FIX` rows when blocked/rejected payload is corrected without date changes.
+4. Implement app-side `RecordBuilder`.
+   - Build the 1505-char line in app from normalized payload data.
+   - Keep optional DB `RecordLine` only as diagnostic/supporting data, not as the primary runtime dependency.
+5. Complete API pipeline semantics.
+   - Add `/api/Check` support and config toggle.
+   - Improve response/error classification, especially auth-related and transient 4xx/5xx cases.
+6. Implement notification flow.
+   - Missing-data email.
+   - CaRGOS rejection email.
+   - 24h anti-spam/hash logic.
+7. Introduce long-running host loop.
+   - Add outer loop with sleep and 22:00 cutoff.
+   - Keep graceful stop behavior and top-level fatal logging.
+8. Add tests and operational hardening.
+   - unit tests for validation, record build, crypto, response mapping;
+   - integration tests for token/check/send;
+   - observability and runbook.
+
+## Tracked implemented updates (as of 2026-03-06)
 - [x] Added `sql/Cargos_Setup.sql` as single DB deployment script.
 - [x] Renamed queue naming to `Cargos_Frontiera` and aligned project code.
 - [x] Renamed identity key `ContractId` to `ContractNo`.
@@ -598,6 +658,11 @@ Notes:
 - [x] Updated sync procedure to ingest mandatory payload fields from `Cargos_Vista_Contratti`.
 - [x] Implemented real token + send pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
 - [x] Confirmed policy to reuse `CommonLibrary` for generic concerns and avoid changes unless strictly generic.
+- [x] Added claim/reservation-based outbox fetch model to support single-instance safe processing.
+- [x] Added app-side `ValidationService`, `RecordBuilder`, and notification services.
+- [x] Added `/api/Check` client support and improved HTTP error classification.
+- [x] Added long-running outer host loop with single-instance mutex and cutoff-hour stop.
+- [x] Added self-test mode for record generation, validation, and crypto smoke checks.
 
 ---
 

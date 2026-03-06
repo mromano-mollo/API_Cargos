@@ -1,7 +1,9 @@
 Imports API_Cargos.Contracts
 Imports API_Cargos.Integration
 Imports API_Cargos.Infrastructure
+Imports API_Cargos.Notifications
 Imports API_Cargos.Persistence
+Imports API_Cargos.Validation
 
 Namespace Orchestration
     Public NotInheritable Class CargosProcessor
@@ -10,54 +12,64 @@ Namespace Orchestration
         Private ReadOnly _syncRepository As ISyncRepository
         Private ReadOnly _frontieraRepository As ICargosFrontieraRepository
         Private ReadOnly _cargosClient As ICargosClient
+        Private ReadOnly _validationService As IValidationService
+        Private ReadOnly _recordBuilder As IRecordBuilder
+        Private ReadOnly _notificationService As INotificationService
 
         Public Sub New(
             settings As AppSettings,
             logger As ILogger,
             syncRepository As ISyncRepository,
             frontieraRepository As ICargosFrontieraRepository,
-            cargosClient As ICargosClient
+            cargosClient As ICargosClient,
+            validationService As IValidationService,
+            recordBuilder As IRecordBuilder,
+            notificationService As INotificationService
         )
             _settings = settings
             _logger = logger
             _syncRepository = syncRepository
             _frontieraRepository = frontieraRepository
             _cargosClient = cargosClient
+            _validationService = validationService
+            _recordBuilder = recordBuilder
+            _notificationService = notificationService
         End Sub
 
-        Public Function Run() As Integer
+        Public Function Run(workerId As String) As Integer
             Try
-                _logger.Info("CARGOS run started.")
+                _logger.Info("CARGOS cycle started.")
                 _logger.Info("DryRun mode: " & _settings.DryRun.ToString())
+                _logger.Info("CheckOnly mode: " & _settings.CargosCheckOnly.ToString())
 
                 _syncRepository.Execute(_settings.ContractsSyncProcedure)
-                Dim eligibleItems = _frontieraRepository.GetEligible(_settings.BatchSize)
-
-                _logger.Info("Eligible queue items: " & eligibleItems.Count.ToString())
+                Dim claimedItems = _frontieraRepository.ClaimEligible(_settings.BatchSize, workerId, _settings.WorkerClaimTimeoutMinutes, Not _settings.CargosCheckOnly)
+                _logger.Info("Claimed queue items: " & claimedItems.Count.ToString())
 
                 If _settings.DryRun Then
-                    For Each item In eligibleItems
-                        _logger.Info(String.Format(
-                            "Queue item {0} | ContractNo={1} | LineNo={2} | Reason={3} | Status={4}",
-                            item.Id,
-                            item.ContractNo,
-                            item.LineNo,
-                            item.Reason,
-                            item.Status
-                        ))
+                    For Each item In claimedItems
+                        _logger.Info(String.Format("Claimed item {0} | ContractNo={1} | LineNo={2} | Reason={3} | Status={4}", item.Id, item.ContractNo, item.LineNo, item.Reason, item.Status))
                     Next
 
-                    _logger.Info("CARGOS run completed.")
+                    _logger.Info("CARGOS cycle completed.")
                     Return 0
                 End If
 
                 Dim sendable As New List(Of OutboxRecord)()
-                For Each item In eligibleItems
-                    If String.IsNullOrWhiteSpace(item.RecordLine) Then
-                        _frontieraRepository.SetDataError(item.Id, "Missing RecordLine payload. Add RecordLine (or CargosRecordLine) to Cargos_Vista_Contratti.")
-                    Else
-                        sendable.Add(item)
+                For Each item In claimedItems
+                    Dim validation = _validationService.Validate(item)
+                    If Not validation.IsValid Then
+                        _frontieraRepository.SetMissingData(item.Id, validation.MissingFields, validation.ToSummary())
+                        Dim missingHash As String = _notificationService.TrySendMissingData(item, validation)
+                        If Not String.IsNullOrWhiteSpace(missingHash) Then
+                            _frontieraRepository.MarkMissingEmailSent(item.Id, missingHash)
+                        End If
+                        Continue For
                     End If
+
+                    item.RecordLine = _recordBuilder.Build(item)
+                    _frontieraRepository.SetReadyToSend(item.Id, item.RecordLine)
+                    sendable.Add(item)
                 Next
 
                 For Each batch In SplitBatches(sendable, _settings.BatchSize)
@@ -65,36 +77,62 @@ Namespace Orchestration
                         _frontieraRepository.RegisterAttempt(item.Id)
                     Next
 
-                    Dim lines As IList(Of String) = batch.Select(Function(x) x.RecordLine).ToList()
-                    Dim outcomes As IList(Of CargosLineOutcome) = _cargosClient.Send(lines)
+                    Dim checkedItems As IList(Of OutboxRecord) = batch
+                    If _settings.CargosUseCheckEndpoint OrElse _settings.CargosCheckOnly Then
+                        checkedItems = ApplyOutcomes(batch, _cargosClient.Check(batch.Select(Function(x) x.RecordLine).ToList()), True)
+                    End If
 
-                    For i As Integer = 0 To batch.Count - 1
-                        Dim item = batch(i)
-                        Dim outcome As CargosLineOutcome = outcomes(i)
+                    If _settings.CargosCheckOnly Then
+                        Continue For
+                    End If
 
-                        Select Case outcome.OutcomeType
-                            Case CargosOutcomeType.Success
-                                _frontieraRepository.SetSentOk(item.Id, outcome.TransactionId)
-                            Case CargosOutcomeType.DataError
-                                _frontieraRepository.SetDataError(item.Id, outcome.ErrorMessage)
-                            Case Else
-                                _frontieraRepository.SetRetry(
-                                    item.Id,
-                                    outcome.ErrorMessage,
-                                    ComputeNextRetryAt(item.AttemptCount)
-                                )
-                        End Select
-                    Next
+                    If checkedItems.Count = 0 Then
+                        Continue For
+                    End If
+
+                    ApplyOutcomes(checkedItems, _cargosClient.Send(checkedItems.Select(Function(x) x.RecordLine).ToList()), False)
                 Next
 
-                _logger.Info("Send pipeline completed.")
-
-                _logger.Info("CARGOS run completed.")
+                _logger.Info("CARGOS cycle completed.")
                 Return 0
             Catch ex As Exception
-                _logger.Error("CARGOS run failed.", ex)
+                _logger.Error("CARGOS cycle failed.", ex)
                 Return 1
             End Try
+        End Function
+
+        Private Function ApplyOutcomes(batch As IList(Of OutboxRecord), outcomes As IList(Of CargosLineOutcome), isCheckOperation As Boolean) As IList(Of OutboxRecord)
+            Dim remaining As New List(Of OutboxRecord)()
+
+            For i As Integer = 0 To batch.Count - 1
+                Dim item = batch(i)
+                Dim outcome As CargosLineOutcome = outcomes(i)
+
+                Select Case outcome.OutcomeType
+                    Case CargosOutcomeType.Success
+                        If isCheckOperation Then
+                            If _settings.CargosCheckOnly Then
+                                _frontieraRepository.SetCheckOk(item.Id)
+                            Else
+                                remaining.Add(item)
+                            End If
+                        Else
+                            _frontieraRepository.SetSentOk(item.Id, outcome.TransactionId)
+                        End If
+
+                    Case CargosOutcomeType.DataError
+                        _frontieraRepository.SetDataError(item.Id, outcome.ErrorMessage)
+                        Dim rejectHash As String = _notificationService.TrySendReject(item, outcome.ErrorMessage)
+                        If Not String.IsNullOrWhiteSpace(rejectHash) Then
+                            _frontieraRepository.MarkRejectEmailSent(item.Id, rejectHash)
+                        End If
+
+                    Case Else
+                        _frontieraRepository.SetRetry(item.Id, outcome.ErrorMessage, ComputeNextRetryAt(item.AttemptCount))
+                End Select
+            Next
+
+            Return remaining
         End Function
 
         Private Shared Function ComputeNextRetryAt(currentAttemptCount As Integer) As DateTime
@@ -121,8 +159,7 @@ Namespace Orchestration
             Dim index As Integer = 0
 
             While index < items.Count
-                Dim currentBatch As List(Of OutboxRecord) = items.Skip(index).Take(size).ToList()
-                result.Add(currentBatch)
+                result.Add(items.Skip(index).Take(size).ToList())
                 index += size
             End While
 

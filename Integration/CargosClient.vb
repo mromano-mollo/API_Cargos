@@ -1,3 +1,4 @@
+Imports System.Net
 Imports System.Net.Http
 Imports System.Text
 Imports System.Web.Script.Serialization
@@ -21,13 +22,21 @@ Namespace Integration
             _tokenProvider = New CargosTokenProvider(settings, logger, _httpClient, New CryptoService())
         End Sub
 
+        Public Function Check(recordLines As IList(Of String)) As IList(Of CargosLineOutcome) Implements ICargosClient.Check
+            Return ExecuteLineCall(recordLines, _settings.CargosCheckPath, "Check")
+        End Function
+
         Public Function Send(recordLines As IList(Of String)) As IList(Of CargosLineOutcome) Implements ICargosClient.Send
+            Return ExecuteLineCall(recordLines, _settings.CargosSendPath, "Send")
+        End Function
+
+        Private Function ExecuteLineCall(recordLines As IList(Of String), relativePath As String, operationName As String) As IList(Of CargosLineOutcome)
             If recordLines Is Nothing OrElse recordLines.Count = 0 Then
                 Return New List(Of CargosLineOutcome)()
             End If
 
             Try
-                Dim requestUrl As String = BuildUrl(_settings.CargosBaseUrl, _settings.CargosSendPath)
+                Dim requestUrl As String = BuildUrl(_settings.CargosBaseUrl, relativePath)
                 Dim token As String = _tokenProvider.GetEncryptedToken()
                 Dim serializer As New JavaScriptSerializer()
                 Dim payload As String = serializer.Serialize(recordLines)
@@ -39,41 +48,33 @@ Namespace Integration
 
                     Using response As HttpResponseMessage = _httpClient.SendAsync(request).GetAwaiter().GetResult()
                         Dim responseBody As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
-
                         If Not response.IsSuccessStatusCode Then
-                            If CInt(response.StatusCode) >= 400 AndAlso CInt(response.StatusCode) < 500 Then
-                                Return CreateUniformOutcomes(recordLines.Count, CargosOutcomeType.DataError, String.Empty,
-                                    String.Format("CaRGOS Send data error ({0}): {1}", CInt(response.StatusCode), Truncate(responseBody, 1000)))
-                            End If
-
-                            Return CreateUniformOutcomes(recordLines.Count, CargosOutcomeType.TechnicalError, String.Empty,
-                                String.Format("CaRGOS Send technical error ({0}): {1}", CInt(response.StatusCode), Truncate(responseBody, 1000)))
+                            Return CreateUniformOutcomes(recordLines.Count, ClassifyHttpFailure(response.StatusCode), String.Empty,
+                                String.Format("CaRGOS {0} error ({1}): {2}", operationName, CInt(response.StatusCode), Truncate(responseBody, 1000)))
                         End If
 
-                        Return ParseSendResponse(recordLines.Count, responseBody)
+                        Return ParseLineResponse(recordLines.Count, responseBody, operationName = "Send")
                     End Using
                 End Using
             Catch ex As Exception
-                _logger.Error("CaRGOS send call failed with technical error.", ex)
+                _logger.Error("CaRGOS " & operationName & " call failed with technical error.", ex)
                 Return CreateUniformOutcomes(recordLines.Count, CargosOutcomeType.TechnicalError, String.Empty, ex.Message)
             End Try
         End Function
 
-        Private Function ParseSendResponse(expectedCount As Integer, responseBody As String) As IList(Of CargosLineOutcome)
+        Private Function ParseLineResponse(expectedCount As Integer, responseBody As String, allowTransactionId As Boolean) As IList(Of CargosLineOutcome)
             Dim serializer As New JavaScriptSerializer()
             Dim parsed As Object
 
             Try
                 parsed = serializer.DeserializeObject(responseBody)
             Catch ex As Exception
-                Return CreateUniformOutcomes(expectedCount, CargosOutcomeType.TechnicalError, String.Empty,
-                    "Unable to parse CaRGOS Send response JSON.")
+                Return CreateUniformOutcomes(expectedCount, CargosOutcomeType.TechnicalError, String.Empty, "Unable to parse CaRGOS response JSON.")
             End Try
 
             Dim items As List(Of Object) = ExtractResultItems(parsed)
             If expectedCount > 1 AndAlso items.Count <> expectedCount Then
-                Return CreateUniformOutcomes(expectedCount, CargosOutcomeType.TechnicalError, String.Empty,
-                    "CaRGOS Send response count does not match request count.")
+                Return CreateUniformOutcomes(expectedCount, CargosOutcomeType.TechnicalError, String.Empty, "CaRGOS response count does not match request count.")
             End If
 
             If expectedCount = 1 AndAlso items.Count = 0 Then
@@ -83,7 +84,7 @@ Namespace Integration
             Dim outcomes As New List(Of CargosLineOutcome)()
             For i As Integer = 0 To expectedCount - 1
                 If i < items.Count Then
-                    outcomes.Add(ParseItemOutcome(items(i)))
+                    outcomes.Add(ParseItemOutcome(items(i), allowTransactionId))
                 Else
                     outcomes.Add(New CargosLineOutcome With {
                         .OutcomeType = CargosOutcomeType.TechnicalError,
@@ -95,7 +96,7 @@ Namespace Integration
             Return outcomes
         End Function
 
-        Private Function ParseItemOutcome(item As Object) As CargosLineOutcome
+        Private Function ParseItemOutcome(item As Object, allowTransactionId As Boolean) As CargosLineOutcome
             Dim dict As IDictionary(Of String, Object) = TryCast(item, IDictionary(Of String, Object))
             If dict Is Nothing Then
                 Return New CargosLineOutcome With {
@@ -108,7 +109,9 @@ Namespace Integration
             Dim errorMessage As String = ReadString(dict, "error", "message", "messaggio", "descrizione", "detail", "dettaglio")
             Dim hasSuccessFlag As Boolean = TryReadBool(dict, "success", "ok", "esito", "isValid", "valid", "valido")
 
-            If hasSuccessFlag OrElse Not String.IsNullOrWhiteSpace(transactionId) Then
+            If hasSuccessFlag OrElse
+               (allowTransactionId AndAlso Not String.IsNullOrWhiteSpace(transactionId)) OrElse
+               ((Not allowTransactionId) AndAlso String.IsNullOrWhiteSpace(errorMessage)) Then
                 Return New CargosLineOutcome With {
                     .OutcomeType = CargosOutcomeType.Success,
                     .TransactionId = transactionId
@@ -119,6 +122,21 @@ Namespace Integration
                 .OutcomeType = CargosOutcomeType.DataError,
                 .ErrorMessage = If(String.IsNullOrWhiteSpace(errorMessage), "CaRGOS rejected payload line.", errorMessage)
             }
+        End Function
+
+        Private Shared Function ClassifyHttpFailure(statusCode As HttpStatusCode) As CargosOutcomeType
+            Select Case CInt(statusCode)
+                Case 400, 422
+                    Return CargosOutcomeType.DataError
+                Case 401, 403, 408, 429
+                    Return CargosOutcomeType.TechnicalError
+                Case Else
+                    If CInt(statusCode) >= 500 Then
+                        Return CargosOutcomeType.TechnicalError
+                    End If
+
+                    Return CargosOutcomeType.TechnicalError
+            End Select
         End Function
 
         Private Shared Function ExtractResultItems(root As Object) As List(Of Object)

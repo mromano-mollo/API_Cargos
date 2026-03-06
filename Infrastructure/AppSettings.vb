@@ -8,14 +8,36 @@ Namespace Infrastructure
         Public Property BatchSize As Integer
         Public Property DryRun As Boolean
         Public Property DbCommandTimeoutSeconds As Integer
+        Public Property WorkerSleepMilliseconds As Integer
+        Public Property WorkerCutoffHour As Integer
+        Public Property WorkerClaimTimeoutMinutes As Integer
+        Public Property RunSelfTests As Boolean
         Public Property CargosBaseUrl As String
         Public Property CargosUsername As String
         Public Property CargosPassword As String
         Public Property CargosApiKey As String
         Public Property CargosOrganization As String
         Public Property CargosTokenPath As String
+        Public Property CargosCheckPath As String
         Public Property CargosSendPath As String
         Public Property CargosHttpTimeoutSeconds As Integer
+        Public Property CargosUseCheckEndpoint As Boolean
+        Public Property CargosCheckOnly As Boolean
+        Public Property EmailSmtpHost As String
+        Public Property EmailSmtpPort As Integer
+        Public Property EmailUser As String
+        Public Property EmailPassword As String
+        Public Property EmailFrom As String
+        Public Property EmailEnableSsl As Boolean
+        Public Property EmailCooldownHours As Integer
+
+        Public ReadOnly Property EmailEnabled As Boolean
+            Get
+                Return Not String.IsNullOrWhiteSpace(EmailSmtpHost) AndAlso
+                    EmailSmtpPort > 0 AndAlso
+                    Not String.IsNullOrWhiteSpace(EmailFrom)
+            End Get
+        End Property
 
         Public Shared Function Load() As AppSettings
             Dim settings As New AppSettings()
@@ -29,14 +51,28 @@ Namespace Infrastructure
             settings.BatchSize = GetIntSetting("Worker.BatchSize", 100)
             settings.DryRun = GetBoolSetting("Worker.DryRun", True)
             settings.DbCommandTimeoutSeconds = GetIntSetting("Db.CommandTimeoutSeconds", 120)
+            settings.WorkerSleepMilliseconds = GetIntSetting("Worker.SleepMilliseconds", 10000)
+            settings.WorkerCutoffHour = GetBoundedIntSetting("Worker.CutoffHour", 22, 0, 23)
+            settings.WorkerClaimTimeoutMinutes = GetIntSetting("Worker.ClaimTimeoutMinutes", 5)
+            settings.RunSelfTests = GetBoolSetting("Diagnostics.RunSelfTests", False)
             settings.CargosBaseUrl = GetSetting("Cargos.BaseUrl", String.Empty)
             settings.CargosUsername = GetSetting("Cargos.Username", String.Empty)
             settings.CargosPassword = GetSetting("Cargos.Password", String.Empty)
             settings.CargosApiKey = GetSetting("Cargos.ApiKey", String.Empty)
             settings.CargosOrganization = GetSetting("Cargos.Organization", settings.CargosUsername)
             settings.CargosTokenPath = GetSetting("Cargos.TokenPath", "/api/Token")
+            settings.CargosCheckPath = GetSetting("Cargos.CheckPath", "/api/Check")
             settings.CargosSendPath = GetSetting("Cargos.SendPath", "/api/Send")
             settings.CargosHttpTimeoutSeconds = GetIntSetting("Cargos.HttpTimeoutSeconds", 60)
+            settings.CargosUseCheckEndpoint = GetBoolSetting("Cargos.UseCheckEndpoint", False)
+            settings.CargosCheckOnly = GetBoolSetting("Cargos.CheckOnly", False)
+            settings.EmailSmtpHost = GetSetting("Email.SmtpHost", String.Empty)
+            settings.EmailSmtpPort = GetIntSetting("Email.SmtpPort", 25)
+            settings.EmailUser = GetSetting("Email.User", String.Empty)
+            settings.EmailPassword = GetSetting("Email.Password", String.Empty)
+            settings.EmailFrom = GetSetting("Email.From", String.Empty)
+            settings.EmailEnableSsl = GetBoolSetting("Email.EnableSsl", False)
+            settings.EmailCooldownHours = GetIntSetting("Email.CooldownHours", 24)
 
             Return settings
         End Function
@@ -74,6 +110,16 @@ Namespace Infrastructure
             Dim value As String = GetSetting(key, defaultValue.ToString())
             Dim parsed As Integer
             If Integer.TryParse(value, parsed) AndAlso parsed > 0 Then
+                Return parsed
+            End If
+
+            Return defaultValue
+        End Function
+
+        Private Shared Function GetBoundedIntSetting(key As String, defaultValue As Integer, minValue As Integer, maxValue As Integer) As Integer
+            Dim value As String = GetSetting(key, defaultValue.ToString())
+            Dim parsed As Integer
+            If Integer.TryParse(value, parsed) AndAlso parsed >= minValue AndAlso parsed <= maxValue Then
                 Return parsed
             End If
 

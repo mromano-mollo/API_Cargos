@@ -76,15 +76,21 @@
     <Compile Include="Integration\CargosOutcome.vb" />
     <Compile Include="Integration\CargosTokenProvider.vb" />
     <Compile Include="Integration\CryptoService.vb" />
+    <Compile Include="Integration\FieldSpec.vb" />
     <Compile Include="Integration\ICargosClient.vb" />
+    <Compile Include="Integration\RecordBuilder.vb" />
     <Compile Include="Infrastructure\AppSettings.vb" />
     <Compile Include="Infrastructure\Logger.vb" />
     <Compile Include="Module1.vb" />
+    <Compile Include="Notifications\NotificationService.vb" />
     <Compile Include="Orchestration\CargosProcessor.vb" />
     <Compile Include="Persistence\ICargosFrontieraRepository.vb" />
     <Compile Include="Persistence\ISyncRepository.vb" />
     <Compile Include="Persistence\SqlCargosFrontieraRepository.vb" />
     <Compile Include="Persistence\SqlSyncRepository.vb" />
+    <Compile Include="Verification\SelfTestRunner.vb" />
+    <Compile Include="Validation\ValidationResult.vb" />
+    <Compile Include="Validation\ValidationService.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

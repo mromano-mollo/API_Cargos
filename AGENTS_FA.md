@@ -36,6 +36,8 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ### FR-02 — Validate mandatory fields (before calling CaRGOS)
 - The service must validate that all CaRGOS fields marked **mandatory** are present.
+- A first validation layer can run in SQL/view logic to detect obvious missing data early and reduce queue noise.
+- The application remains the **authoritative final validator** before any `Check` or `Send` call.
 - Conditional mandatory rules must be applied (examples from CaRGOS docs):
   - If "residence place" is provided, then "residence address" becomes required.
   - Second driver: either provide all required second-driver fields OR do not provide the second driver at all.
@@ -68,12 +70,16 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 - If `CONTRATTO_CHECKIN_DATA` or `CONTRATTO_CHECKOUT_DATA` changes for an already processed contract, the service must send a new call to CaRGOS with updated data.
 - The new call must be tracked as a new queue item, while preserving history of previous attempts/results.
 
+### FR-07B - Reprocess when data is fixed
+- If a contract was previously blocked with `MISSING_DATA` or rejected with `SENT_KO_DATA`, and the mandatory payload is corrected, the service must reprocess it even when checkin/checkout dates did not change.
+- Reprocessing after a data correction must be tracked as a new queue item, preserving prior history.
+
 ### FR-08 - Extraction + snapshot + enqueue flow
-- At each run:
+- At each processing cycle:
   1) execute sync procedure `Cargos_Sync_Contratti_Frontiera`;
   2) procedure extracts current eligible contracts from `Cargos_Vista_Contratti`;
   3) procedure upserts contract snapshot state in internal table `Cargos_Contratti`;
-  4) if a new contract is found or checkin/checkout values changed, procedure inserts a new pending item into `Cargos_Frontiera`.
+  4) if a new contract is found, checkin/checkout values changed, or blocked/rejected payload data was corrected, procedure inserts a new pending item into `Cargos_Frontiera`.
 
 ---
 
@@ -88,7 +94,8 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ### TR-01 — Platform & project type
 - VB.NET solution
-- Recommended: **.NET Worker Service** (Generic Host) deployable as Windows Service or scheduled console.
+- Recommended operational mode: long-running single-instance process (console or Windows Service style host).
+- The process can execute the worker cycle in a loop with a short sleep between cycles and stop at a configured daily cutoff time.
 
 ### TR-02 — HTTP client usage
 - Use HttpClientFactory (or a single shared HttpClient instance) to avoid socket exhaustion.
@@ -118,6 +125,7 @@ For `Check` and `Send`, the body is:
 - Default behavior can be:
   - DEV/TEST: `Check` then `Send`
   - PROD: optional toggle, but recommended for troubleshooting
+- Support a `CheckOnly` mode: when enabled, call only `/api/Check` and do not execute `/api/Send`.
 
 ### TR-07 - Reuse `CommonLibrary` for shared concerns
 - `CommonLibrary` can be used for common capabilities already available in solution (for example logging, email sending, DB access).
@@ -130,6 +138,20 @@ For `Check` and `Send`, the body is:
 - On change detection, enqueue a new item in `Cargos_Frontiera` with reason `DATE_CHANGE`.
 - Preferred model: implement sync logic in SQL procedure `Cargos_Sync_Contratti_Frontiera` and execute it at the beginning of each app cycle.
 - SQL Agent scheduling of the same procedure is optional fallback, not the primary orchestration model.
+
+### TR-09 - Dual validation strategy
+- SQL/view validation is the first layer and should handle cheap deterministic checks based on source DB data.
+- App validation is mandatory and is the final gate before `Check`/`Send`.
+- To support retry after data fixes, tracking must include not only date-based change detection but also payload change detection for contracts previously stuck in `MISSING_DATA` or `SENT_KO_DATA`.
+
+### TR-10 - Long-running single-instance execution
+- Preferred runtime is one active instance only.
+- Each cycle should:
+  1) execute sync;
+  2) process up to configured batch size;
+  3) sleep for a short interval (for example 10 seconds);
+  4) stop after configured local cutoff time (for example 22:00).
+- Overlapping instances must be prevented.
 
 ---
 
@@ -198,7 +220,8 @@ Fields:
   - `ConducenteContraenteCittadinanzaCod`
   - `ConducenteContraenteDocideTipoCod`, `ConducenteContraenteDocideNumero`, `ConducenteContraenteDocideLuogorilCod`
   - `ConducenteContraentePatenteNumero`, `ConducenteContraentePatenteLuogorilCod`
-- `DataFingerprint` (hash/string built from normalized checkin/checkout)
+- `DateFingerprint` (hash/string built from normalized checkin/checkout)
+- `PayloadFingerprint` (hash/string built from mandatory payload used by validation/record build)
 - `LastQueuedFingerprint` (hash/string of last enqueued snapshot)
 - `LastQueuedAt` (datetime)
 - `LastSeenAt` (datetime)
@@ -212,12 +235,13 @@ Fields:
 - `CargosContractId` (value used in CaRGOS record, if different)
 - `BranchId`
 - Same mandatory CaRGOS payload columns listed for `Cargos_Contratti` (snapshot at queue creation time)
-- `Reason` (`INITIAL_SEND` | `DATE_CHANGE`)
+- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
 - `SnapshotHash` (hash/string of snapshot used for this send item)
 - `Status` (string/enum):
   - `PENDING`
   - `MISSING_DATA`
   - `READY_TO_SEND`
+  - `CHECK_OK`
   - `SENT_OK`
   - `SENT_KO_RETRY`
   - `SENT_KO_DATA`
@@ -230,7 +254,8 @@ Fields:
 - `CreatedAt`, `UpdatedAt`
 
 ### Idempotency rule
-- A queue item is eligible for sending only if status in `{PENDING, READY_TO_SEND, SENT_KO_RETRY}` AND that same queue item has not been `SENT_OK`.
+- A queue item is eligible for processing only if status in `{PENDING, READY_TO_SEND, SENT_KO_RETRY}`.
+- `CHECK_OK` is a parked state used when `CheckOnly=True`; it must not be rechecked in check-only mode, but it can be picked later for real send when check-only mode is disabled.
 - Prevent duplicate queue creation for same contract snapshot using unique key `(ContractNo, LineNo, SnapshotHash)`.
 
 ---
@@ -360,6 +385,7 @@ Store in `appsettings.json` + environment overrides:
 - `Cargos:Password`
 - `Cargos:ApiKey`
 - `Cargos:UseCheckEndpoint` (bool)
+- `Cargos:CheckOnly` (bool)
 - `Worker:PollingIntervalSeconds`
 - `Db:ContractsViewName` (default `Cargos_Vista_Contratti`)
 - `Db:ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`)
@@ -439,7 +465,7 @@ Add correlation id per batch to link logs.
 - [ ] Add configuration validation on startup
 - [ ] Add tests
 
-### Tracked implemented updates (as of 2026-03-05)
+### Tracked implemented updates (as of 2026-03-06)
 - [x] Added SQL setup file `sql/Cargos_Setup.sql` as single executable DB script.
 - [x] Renamed queue table from legacy `CargosOutbox` naming to `Cargos_Frontiera`.
 - [x] Renamed key field from `ContractId` to `ContractNo`.
@@ -448,6 +474,11 @@ Add correlation id per batch to link logs.
 - [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Frontiera`.
 - [x] Added real CaRGOS token flow and Send call pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
 - [x] Added unique idempotency index `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Frontiera`.
+- [x] Added payload-fix reprocessing model (`DATA_FIX`) in analysis and implementation target.
+- [x] Added long-running single-instance host loop model with sleep and cutoff hour.
+- [x] Added app-side validation, record building, notification, and anti-spam implementation.
+- [x] Added queue claim/reservation model to avoid overlapping processing of the same outbox row.
+- [x] Added self-test execution mode for validation, record-builder, and crypto smoke checks.
 
 ---
 
