@@ -23,7 +23,7 @@ Namespace Persistence
 "    SELECT" & vbCrLf &
 "        f.*," & vbCrLf &
 "        ROW_NUMBER() OVER (" & vbCrLf &
-"            PARTITION BY f.ContractNo, f.LineNo" & vbCrLf &
+"            PARTITION BY f.ContractNo, f.ContractLineNo" & vbCrLf &
 "            ORDER BY f.CreatedAt DESC, f.Id DESC" & vbCrLf &
 "        ) AS rn" & vbCrLf &
 "    FROM dbo.Cargos_Contratti_Frontiera f" & vbCrLf &
@@ -46,7 +46,7 @@ Namespace Persistence
 "OUTPUT" & vbCrLf &
 "    inserted.Id," & vbCrLf &
 "    inserted.ContractNo," & vbCrLf &
-"    inserted.LineNo," & vbCrLf &
+"    inserted.ContractLineNo," & vbCrLf &
 "    inserted.CargosContractId," & vbCrLf &
 "    inserted.BranchId," & vbCrLf &
 "    inserted.BranchEmail," & vbCrLf &
@@ -291,7 +291,7 @@ Namespace Persistence
             Dim item As New OutboxRecord() With {
                 .Id = Convert.ToInt64(reader("Id")),
                 .ContractNo = Convert.ToString(reader("ContractNo")),
-                .LineNo = Convert.ToInt64(reader("LineNo")),
+                .ContractLineNo = Convert.ToInt64(reader("ContractLineNo")),
                 .CargosContractId = Convert.ToString(reader("CargosContractId")),
                 .BranchId = Convert.ToString(reader("BranchId")),
                 .BranchEmail = Convert.ToString(reader("BranchEmail")),

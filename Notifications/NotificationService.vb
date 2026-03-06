@@ -31,9 +31,9 @@ Namespace Notifications
                 Return String.Empty
             End If
 
-            Dim subject As String = String.Format("CARGOS - Missing mandatory data for contract {0}/{1}", item.ContractNo, item.LineNo)
+            Dim subject As String = String.Format("CARGOS - Missing mandatory data for contract {0}/{1}", item.ContractNo, item.ContractLineNo)
             Dim body As String =
-                "Contract: " & item.ContractNo & "/" & item.LineNo & Environment.NewLine &
+                "Contract: " & item.ContractNo & "/" & item.ContractLineNo & Environment.NewLine &
                 "Branch: " & item.BranchId & Environment.NewLine &
                 "Missing CaRGOS fields: " & Environment.NewLine &
                 String.Join(Environment.NewLine, validation.MissingFields.Select(Function(x) "- " & x))
@@ -50,9 +50,9 @@ Namespace Notifications
                 Return String.Empty
             End If
 
-            Dim subject As String = String.Format("CARGOS - Rejected contract {0}/{1}", item.ContractNo, item.LineNo)
+            Dim subject As String = String.Format("CARGOS - Rejected contract {0}/{1}", item.ContractNo, item.ContractLineNo)
             Dim body As String =
-                "Contract: " & item.ContractNo & "/" & item.LineNo & Environment.NewLine &
+                "Contract: " & item.ContractNo & "/" & item.ContractLineNo & Environment.NewLine &
                 "Branch: " & item.BranchId & Environment.NewLine &
                 "CaRGOS reject details: " & Environment.NewLine &
                 normalizedMessage
@@ -68,12 +68,12 @@ Namespace Notifications
             End If
 
             If String.IsNullOrWhiteSpace(recipient) Then
-                _logger.Warn(String.Format("Skipping {0} email for {1}/{2}: missing BranchEmail.", scenario, item.ContractNo, item.LineNo))
+                _logger.Warn(String.Format("Skipping {0} email for {1}/{2}: missing BranchEmail.", scenario, item.ContractNo, item.ContractLineNo))
                 Return False
             End If
 
             If lastSentAt.HasValue AndAlso String.Equals(lastHash, currentHash, StringComparison.OrdinalIgnoreCase) AndAlso lastSentAt.Value > DateTime.UtcNow.AddHours(-_settings.EmailCooldownHours) Then
-                _logger.Info(String.Format("Skipping {0} email for {1}/{2}: anti-spam cooldown active.", scenario, item.ContractNo, item.LineNo))
+                _logger.Info(String.Format("Skipping {0} email for {1}/{2}: anti-spam cooldown active.", scenario, item.ContractNo, item.ContractLineNo))
                 Return False
             End If
 

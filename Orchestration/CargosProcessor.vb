@@ -51,7 +51,7 @@ Namespace Orchestration
 
                 If _settings.DryRun Then
                     For Each item In claimedItems
-                        _logger.Info(String.Format("Claimed item {0} | ContractNo={1} | LineNo={2} | Reason={3} | Status={4}", item.Id, item.ContractNo, item.LineNo, item.Reason, item.Status))
+                        _logger.Info(String.Format("Claimed item {0} | ContractNo={1} | ContractLineNo={2} | Reason={3} | Status={4}", item.Id, item.ContractNo, item.ContractLineNo, item.Reason, item.Status))
                     Next
 
                     _logger.Info("CARGOS cycle completed.")

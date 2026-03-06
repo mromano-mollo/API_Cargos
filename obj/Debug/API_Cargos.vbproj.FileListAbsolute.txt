@@ -13,3 +13,7 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck\API_
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck2\API_Cargos.exe.config
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck2\API_Cargos.exe
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck2\API_Cargos.pdb
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_renamecheck2\API_Cargos.xml

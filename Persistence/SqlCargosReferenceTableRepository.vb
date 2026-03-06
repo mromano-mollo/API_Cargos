@@ -98,7 +98,7 @@ Namespace Persistence
 "        tgt.LastSyncError = @FailureMessage," & vbCrLf &
 "        tgt.UpdatedAt = @AttemptedAtUtc" & vbCrLf &
 "WHEN NOT MATCHED THEN" & vbCrLf &
-"    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, RowCount, CreatedAt, UpdatedAt)" & vbCrLf &
+"    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, SyncedRowCount, CreatedAt, UpdatedAt)" & vbCrLf &
 "    VALUES (src.TableId, src.TableName, NULL, 'FAILED', @FailureMessage, 0, @AttemptedAtUtc, @AttemptedAtUtc);"
 
             Using connection As New SqlConnection(_connectionString)
@@ -126,18 +126,18 @@ Namespace Persistence
 "        tgt.LastSyncedAt = @SyncedAtUtc," & vbCrLf &
 "        tgt.LastSyncStatus = 'OK'," & vbCrLf &
 "        tgt.LastSyncError = NULL," & vbCrLf &
-"        tgt.RowCount = @RowCount," & vbCrLf &
+"        tgt.SyncedRowCount = @SyncedRowCount," & vbCrLf &
 "        tgt.UpdatedAt = @SyncedAtUtc" & vbCrLf &
 "WHEN NOT MATCHED THEN" & vbCrLf &
-"    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, RowCount, CreatedAt, UpdatedAt)" & vbCrLf &
-"    VALUES (src.TableId, src.TableName, @SyncedAtUtc, 'OK', NULL, @RowCount, @SyncedAtUtc, @SyncedAtUtc);"
+"    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, SyncedRowCount, CreatedAt, UpdatedAt)" & vbCrLf &
+"    VALUES (src.TableId, src.TableName, @SyncedAtUtc, 'OK', NULL, @SyncedRowCount, @SyncedAtUtc, @SyncedAtUtc);"
 
             Using command As New SqlCommand(sql, connection, transaction)
                 command.CommandTimeout = _commandTimeoutSeconds
                 command.Parameters.Add("@TableId", SqlDbType.Int).Value = definition.TableId
                 command.Parameters.Add("@TableName", SqlDbType.NVarChar, 50).Value = definition.TableName
                 command.Parameters.Add("@SyncedAtUtc", SqlDbType.DateTime2).Value = syncedAtUtc
-                command.Parameters.Add("@RowCount", SqlDbType.Int).Value = rowCount
+                command.Parameters.Add("@SyncedRowCount", SqlDbType.Int).Value = rowCount
                 command.ExecuteNonQuery()
             End Using
         End Sub

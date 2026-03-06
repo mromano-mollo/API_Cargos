@@ -141,7 +141,7 @@ Use table `Cargos_Contratti_Frontiera` as single source for processing state.
 ### Snapshot state table (`Cargos_Contratti`)
 Keep one row per contract-line as the latest extracted state from `Cargos_Vista_Contratti`.
 Core fields:
-- `ContractNo` + `LineNo` (unique key)
+- `ContractNo` + `ContractLineNo` (unique key)
 - `CargosContractId`
 - `BranchId`
 - all mandatory CaRGOS payload fields
@@ -153,7 +153,7 @@ Core fields:
 
 ### Outbox table (`Cargos_Contratti_Frontiera`)
 Core fields:
-- `ContractNo` + `LineNo`
+- `ContractNo` + `ContractLineNo`
 - `CargosContractId`
 - `BranchId`
 - same mandatory payload columns copied from snapshot at enqueue time
@@ -201,7 +201,7 @@ Core fields:
   - `TIPO_PAGAMENTO`
 
 ### Idempotency constraints
-- Unique key on `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
+- Unique key on `(ContractNo, ContractLineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
 - Records with `SENT_OK` are never eligible again for the same snapshot.
 - Selection query should process only the latest pending/retry snapshot per contract to avoid sending obsolete data.
 - Eligibility predicate:
@@ -549,7 +549,7 @@ Correlation:
 Before send, enforce:
 - status eligibility
 - not already `SENT_OK`
-- no duplicate `(ContractNo, LineNo, SnapshotHash)` in queue
+- no duplicate `(ContractNo, ContractLineNo, SnapshotHash)` in queue
 - worker claim/reservation step before send
 - do not pick an older retry row if a newer snapshot already exists for the same contract-line
 - optional optimistic concurrency with `UpdatedAt`/row version
@@ -565,7 +565,7 @@ Key DB shape:
 CREATE TABLE dbo.Cargos_Contratti (
     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
     ContractNo NVARCHAR(50) NOT NULL,
-    LineNo BIGINT NOT NULL,
+    ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
     BranchId NVARCHAR(50) NOT NULL,
     -- mandatory CaRGOS payload columns (Contratto*, OperatoreId, Agenzia*, Veicolo*, Conducente*)
@@ -578,13 +578,13 @@ CREATE TABLE dbo.Cargos_Contratti (
     LastSeenAt DATETIME2 NOT NULL,
     CreatedAt DATETIME2 NOT NULL,
     UpdatedAt DATETIME2 NOT NULL,
-    CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, LineNo)
+    CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, ContractLineNo)
 );
 
 CREATE TABLE dbo.Cargos_Contratti_Frontiera (
     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
     ContractNo NVARCHAR(50) NOT NULL,
-    LineNo BIGINT NOT NULL,
+    ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
     BranchId NVARCHAR(50) NOT NULL,
     -- same mandatory CaRGOS payload columns snapshot
@@ -606,7 +606,7 @@ CREATE TABLE dbo.Cargos_Contratti_Frontiera (
 );
 
 CREATE UNIQUE INDEX UQ_Cargos_Contratti_Frontiera_Snapshot
-ON dbo.Cargos_Contratti_Frontiera(ContractNo, LineNo, SnapshotHash);
+ON dbo.Cargos_Contratti_Frontiera(ContractNo, ContractLineNo, SnapshotHash);
 
 CREATE INDEX IX_Cargos_Contratti_Frontiera_StatusRetry
 ON dbo.Cargos_Contratti_Frontiera(Status, NextRetryAt);
@@ -711,7 +711,7 @@ Notes:
 - [x] Added `sql/Cargos_Setup.sql` as single DB deployment script.
 - [x] Renamed queue naming to `Cargos_Contratti_Frontiera` and aligned project code.
 - [x] Renamed identity key `ContractId` to `ContractNo`.
-- [x] Added `LineNo` and switched uniqueness/idempotency to contract-line.
+- [x] Added `ContractLineNo` and switched uniqueness/idempotency to contract-line.
 - [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Contratti_Frontiera`.
 - [x] Updated sync procedure to ingest mandatory payload fields from `Cargos_Vista_Contratti`.
 - [x] Implemented real token + send pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
