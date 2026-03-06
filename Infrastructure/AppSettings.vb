@@ -5,6 +5,7 @@ Namespace Infrastructure
     Public NotInheritable Class AppSettings
         Public Property ConnectionString As String
         Public Property ContractsSyncProcedure As String
+        Public Property AgenciesSyncProcedure As String
         Public Property BatchSize As Integer
         Public Property DryRun As Boolean
         Public Property DbCommandTimeoutSeconds As Integer
@@ -26,6 +27,17 @@ Namespace Infrastructure
         Public Property CargosCheckOnly As Boolean
         Public Property CargosSyncTablesOnStartup As Boolean
         Public Property CargosFailStartupIfTableSyncFails As Boolean
+        Public Property CargosWebBaseUrl As String
+        Public Property CargosWebLoginPath As String
+        Public Property CargosWebAgencyCreatePath As String
+        Public Property CargosWebUsername As String
+        Public Property CargosWebPassword As String
+        Public Property CargosWebAuthCookieHeader As String
+        Public Property CargosWebVerifyTokenField As String
+        Public Property CargosWebLoginUsernameField As String
+        Public Property CargosWebLoginPasswordField As String
+        Public Property CargosWebSyncAgenciesOnStartup As Boolean
+        Public Property CargosWebFailStartupIfAgencySyncFails As Boolean
         Public Property EmailSmtpHost As String
         Public Property EmailSmtpPort As Integer
         Public Property EmailUser As String
@@ -51,6 +63,7 @@ Namespace Infrastructure
             End If
 
             settings.ContractsSyncProcedure = GetSetting("Db.ContractsSyncProcedure", "Cargos_Sync_Contratti_Frontiera")
+            settings.AgenciesSyncProcedure = GetSetting("Db.AgenciesSyncProcedure", "Cargos_Sync_Agenzie_Frontiera")
             settings.BatchSize = GetIntSetting("Worker.BatchSize", 100)
             settings.DryRun = GetBoolSetting("Worker.DryRun", True)
             settings.DbCommandTimeoutSeconds = GetIntSetting("Db.CommandTimeoutSeconds", 120)
@@ -72,6 +85,17 @@ Namespace Infrastructure
             settings.CargosCheckOnly = GetBoolSetting("Cargos.CheckOnly", False)
             settings.CargosSyncTablesOnStartup = GetBoolSetting("Cargos.SyncTablesOnStartup", False)
             settings.CargosFailStartupIfTableSyncFails = GetBoolSetting("Cargos.FailStartupIfTableSyncFails", True)
+            settings.CargosWebBaseUrl = GetSetting("CargosWeb.BaseUrl", "https://cargos.poliziadistato.it/CARGOS_WEB")
+            settings.CargosWebLoginPath = GetSetting("CargosWeb.LoginPath", "/Login/Login")
+            settings.CargosWebAgencyCreatePath = GetSetting("CargosWeb.AgencyCreatePath", "/Agenzia/Create")
+            settings.CargosWebUsername = GetSetting("CargosWeb.Username", settings.CargosUsername)
+            settings.CargosWebPassword = GetSetting("CargosWeb.Password", settings.CargosPassword)
+            settings.CargosWebAuthCookieHeader = GetSetting("CargosWeb.AuthCookieHeader", String.Empty)
+            settings.CargosWebVerifyTokenField = GetSetting("CargosWeb.VerifyTokenField", "__RequestVerificationToken")
+            settings.CargosWebLoginUsernameField = GetSetting("CargosWeb.LoginUsernameField", "Username")
+            settings.CargosWebLoginPasswordField = GetSetting("CargosWeb.LoginPasswordField", "Password")
+            settings.CargosWebSyncAgenciesOnStartup = GetBoolSetting("CargosWeb.SyncAgenciesOnStartup", False)
+            settings.CargosWebFailStartupIfAgencySyncFails = GetBoolSetting("CargosWeb.FailStartupIfAgencySyncFails", True)
             settings.EmailSmtpHost = GetSetting("Email.SmtpHost", String.Empty)
             settings.EmailSmtpPort = GetIntSetting("Email.SmtpPort", 25)
             settings.EmailUser = GetSetting("Email.User", String.Empty)

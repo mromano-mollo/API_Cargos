@@ -8,6 +8,7 @@ Imports API_Cargos.Validation
 Namespace Integration
     Public Interface ICargosLookupService
         Sub Resolve(item As OutboxRecord, validation As ValidationResult)
+        Function ResolveLuogoCode(city As String, county As String, postCode As String, fallbackValue As String, fieldName As String, validation As ValidationResult) As String
     End Interface
 
     Public NotInheritable Class CargosLookupService
@@ -45,6 +46,53 @@ Namespace Integration
             item.ConducenteContraenteDocideLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteDocideLuogorilCod, "CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD", validation)
             item.ConducenteContraentePatenteLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraentePatenteLuogorilCod, "CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD", validation)
         End Sub
+
+        Public Function ResolveLuogoCode(city As String, county As String, postCode As String, fallbackValue As String, fieldName As String, validation As ValidationResult) As String Implements ICargosLookupService.ResolveLuogoCode
+            Dim rows = GetRows(LuoghiTableId)
+            If rows.Count = 0 Then
+                validation.Errors.Add(String.Format("{0} lookup cache is empty for table {1}.", fieldName, LuoghiTableId))
+                Return fallbackValue
+            End If
+
+            If Not String.IsNullOrWhiteSpace(fallbackValue) Then
+                Dim directCode = rows.FirstOrDefault(Function(r) Normalize(r.Code) = Normalize(fallbackValue))
+                If directCode IsNot Nothing Then
+                    Return directCode.Code
+                End If
+            End If
+
+            Dim normalizedCity As String = Normalize(city)
+            Dim normalizedCounty As String = Normalize(county)
+            Dim normalizedPostCode As String = Normalize(postCode)
+
+            Dim candidates = rows.Where(Function(r) MatchesStructuredLuogo(r, normalizedCity, normalizedCounty, normalizedPostCode)).
+                GroupBy(Function(r) r.Code, StringComparer.OrdinalIgnoreCase).
+                Select(Function(g) g.First()).
+                ToList()
+
+            If candidates.Count = 1 Then
+                Return candidates(0).Code
+            End If
+
+            If candidates.Count > 1 AndAlso Not String.IsNullOrWhiteSpace(normalizedPostCode) Then
+                Dim narrowed = candidates.Where(Function(r) GetSearchText(r).Contains(normalizedPostCode)).ToList()
+                If narrowed.Count = 1 Then
+                    Return narrowed(0).Code
+                End If
+            End If
+
+            If candidates.Count > 1 Then
+                validation.Errors.Add(String.Format("{0} lookup is ambiguous for city '{1}', county '{2}', postcode '{3}'.", fieldName, city, county, postCode))
+                Return fallbackValue
+            End If
+
+            If Not String.IsNullOrWhiteSpace(fallbackValue) Then
+                Return ResolveValue(LuoghiTableId, fallbackValue, fieldName, validation)
+            End If
+
+            validation.Errors.Add(String.Format("{0} lookup value was not found for city '{1}', county '{2}', postcode '{3}'.", fieldName, city, county, postCode))
+            Return fallbackValue
+        End Function
 
         Private Function ResolveValue(tableId As Integer, rawValue As String, fieldName As String, validation As ValidationResult) As String
             If String.IsNullOrWhiteSpace(rawValue) Then
@@ -129,8 +177,34 @@ Namespace Integration
                 Normalize(row.Column5),
                 Normalize(row.Column6),
                 Normalize(row.Column7),
-                Normalize(row.Column8)
+                Normalize(row.Column8),
+                Normalize(row.RawLine)
             }.Where(Function(v) Not String.IsNullOrWhiteSpace(v))
+        End Function
+
+        Private Shared Function GetSearchText(row As CargosReferenceTableRow) As String
+            Return String.Join(" ", GetComparableValues(row))
+        End Function
+
+        Private Shared Function MatchesStructuredLuogo(row As CargosReferenceTableRow, normalizedCity As String, normalizedCounty As String, normalizedPostCode As String) As Boolean
+            Dim searchText As String = GetSearchText(row)
+            If String.IsNullOrWhiteSpace(normalizedCity) Then
+                Return False
+            End If
+
+            If Not searchText.Contains(normalizedCity) Then
+                Return False
+            End If
+
+            If Not String.IsNullOrWhiteSpace(normalizedCounty) AndAlso Not searchText.Contains(normalizedCounty) Then
+                Return False
+            End If
+
+            If Not String.IsNullOrWhiteSpace(normalizedPostCode) AndAlso Not searchText.Contains(normalizedPostCode) Then
+                Return False
+            End If
+
+            Return True
         End Function
 
         Private Shared Function Normalize(value As String) As String

@@ -186,6 +186,14 @@ Core fields:
 - Purpose:
   - if the view already provides a valid CaRGOS code, keep it unchanged;
   - if the view provides a local/business value instead, resolve it to the correct cached CaRGOS code.
+- For agency bootstrap, prefer structured location fields over one raw free-text value:
+  - `AgenziaCity`
+  - `AgenziaCounty`
+  - `AgenziaPostCode`
+- Resolution priority for `AGENZIA_LUOGO_COD`:
+  1) direct code match;
+  2) `city + county`;
+  3) `CAP` as tie-breaker.
 - Initial usage:
   - `LUOGHI` fields
   - `TIPO_VEICOLO`
@@ -447,6 +455,17 @@ Required keys:
 - `Cargos.CheckOnly`
 - `Cargos.SyncTablesOnStartup`
 - `Cargos.FailStartupIfTableSyncFails`
+- `CargosWeb.BaseUrl`
+- `CargosWeb.LoginPath`
+- `CargosWeb.AgencyCreatePath`
+- `CargosWeb.Username`
+- `CargosWeb.Password`
+- `CargosWeb.AuthCookieHeader`
+- `CargosWeb.VerifyTokenField`
+- `CargosWeb.LoginUsernameField`
+- `CargosWeb.LoginPasswordField`
+- `CargosWeb.SyncAgenciesOnStartup`
+- `CargosWeb.FailStartupIfAgencySyncFails`
 - `Email.SmtpHost`
 - `Email.SmtpPort`
 - `Email.User`
@@ -705,6 +724,10 @@ Notes:
 - [x] Added startup sync service and SQL cache tables for `api/Tabella` reference data.
 - [x] Added `Cargos.SyncTablesOnStartup` and `Cargos.FailStartupIfTableSyncFails` startup controls.
 - [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
+- [x] Added agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
+- [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
+- [x] Added `CargosWeb.*` settings for web auth and startup agency load.
+- [x] Added structured agency luogo resolution using `AgenziaCity`, `AgenziaCounty`, and `AgenziaPostCode`.
 
 ---
 

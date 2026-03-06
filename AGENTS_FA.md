@@ -162,6 +162,30 @@ For `Check` and `Send`, the body is:
   - if `true`, abort startup when table sync fails;
   - if `false`, log the error and continue with the last cached data.
 
+### TR-12 - Agency initial load through CARGOS_WEB
+- Initial agency load is handled through `CARGOS_WEB/Agenzia/Create`, not through the public `CARGOS_API`.
+- Add startup setting `CargosWeb.SyncAgenciesOnStartup`:
+  - if `true`, sync agency source rows and attempt bootstrap on CaRGOS before entering the contract loop;
+  - if `false`, skip agency bootstrap.
+- Add startup setting `CargosWeb.FailStartupIfAgencySyncFails`:
+  - if `true`, abort startup when agency bootstrap fails;
+  - if `false`, log the error and continue.
+- Agency create payload must include:
+  - `Agenzia.AGENZIA_ID`
+  - `Agenzia.AGENZIA_NOME`
+  - `Agenzia.AGENZIA_LUOGO_COD`
+  - `Agenzia.AGENZIA_INDIRIZZO`
+- `Agenzia.AGENZIA_RECAPITO_TEL`
+- `Agenzia.AGENZIA_LUOGO_COD` must be resolved to a Polizia internal code using cached `LUOGHI` table values.
+- Preferred source model for agency location is:
+  - `AgenziaCity`
+  - `AgenziaCounty`
+  - `AgenziaPostCode`
+- Resolution priority for agency luogo is:
+  1) direct code if already present;
+  2) `city + county`;
+  3) `CAP` only as disambiguation.
+
 ---
 
 ## 6. Proposed Solution Architecture (Projects)
@@ -215,6 +239,12 @@ Naming convention: every new CARGOS table must start with `Cargos_` prefix.
 - `Cargos_Tabella_Righe`
   - stores cached rows downloaded from `api/Tabella`
   - generic fields: `TableId`, `RowNumber`, `Code`, `Description`, extra columns, raw line, sync timestamps
+
+### Agency bootstrap tables
+- `Cargos_Agenzie`
+  - stores one current snapshot row per branch/agency source record
+- `Cargos_Agenzie_Frontiera`
+  - stores startup agency bootstrap queue and outcomes for `CARGOS_WEB/Agenzia/Create`
 
 ### Snapshot table: `Cargos_Contratti`
 Purpose: keep one current state row per contract-line for change detection.
@@ -399,6 +429,7 @@ Store in `App.config` (`<connectionStrings>` + `<appSettings>`) + environment ov
 - `ConnectionStrings:CargosDb` or fallback `Db.ConnectionString`: SQL Server connection string used by the app.
 - `Db.ContractsViewName` (default `Cargos_Vista_Contratti`): logical source view name used by documentation and DB design.
 - `Db.ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`): stored procedure executed at each cycle to sync and enqueue contracts.
+- `Db.AgenciesSyncProcedure` (default `Cargos_Sync_Agenzie_Frontiera`): stored procedure executed at startup to sync and enqueue agency bootstrap rows.
 - `Db.CommandTimeoutSeconds`: SQL command timeout for repositories and sync operations.
 - `Worker.BatchSize`: max number of queue rows processed in one cycle and in one outbound batch.
 - `Worker.SleepMilliseconds`: pause between two processing cycles in long-running mode.
@@ -420,6 +451,17 @@ Store in `App.config` (`<connectionStrings>` + `<appSettings>`) + environment ov
 - `Cargos.CheckOnly` (bool): if `true`, call only `/api/Check` and never `/api/Send`.
 - `Cargos.SyncTablesOnStartup` (bool): if `true`, sync `api/Tabella` caches once before entering the main loop.
 - `Cargos.FailStartupIfTableSyncFails` (bool): if `true`, abort startup when reference table sync fails.
+- `CargosWeb.BaseUrl`: base URL of the authenticated CaRGOS web portal.
+- `CargosWeb.LoginPath`: relative path of the web login endpoint/page.
+- `CargosWeb.AgencyCreatePath`: relative path of the agency create endpoint/page.
+- `CargosWeb.Username`: web-portal username used for login when cookie header is not supplied.
+- `CargosWeb.Password`: web-portal password used for login when cookie header is not supplied.
+- `CargosWeb.AuthCookieHeader`: optional pre-authenticated cookie header value used instead of login flow.
+- `CargosWeb.VerifyTokenField`: anti-forgery field name expected by the web portal.
+- `CargosWeb.LoginUsernameField`: form field name used for web login username.
+- `CargosWeb.LoginPasswordField`: form field name used for web login password.
+- `CargosWeb.SyncAgenciesOnStartup` (bool): if `true`, run the initial agency bootstrap before contract processing.
+- `CargosWeb.FailStartupIfAgencySyncFails` (bool): if `true`, abort startup when agency bootstrap fails.
 - `Email.SmtpHost`: SMTP server host used for notifications.
 - `Email.SmtpPort`: SMTP server port.
 - `Email.User`: SMTP username, if authentication is required.
@@ -515,6 +557,12 @@ Add correlation id per batch to link logs.
 - [x] Added app-side validation, record building, notification, and anti-spam implementation.
 - [x] Added queue claim/reservation model to avoid overlapping processing of the same outbox row.
 - [x] Added self-test execution mode for validation, record-builder, and crypto smoke checks.
+- [x] Added startup sync service and SQL cache tables for `api/Tabella` reference data.
+- [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
+- [x] Added startup agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
+- [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
+- [x] Added `CargosWeb.*` startup/auth settings for agency bootstrap.
+- [x] Added structured agency luogo handling (`AgenziaCity`, `AgenziaCounty`, `AgenziaPostCode`) for `AGENZIA_LUOGO_COD` resolution.
 
 ---
 

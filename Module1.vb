@@ -80,6 +80,28 @@ Module Module1
             )
 
             Dim workerId As String = Environment.MachineName & "-" & Process.GetCurrentProcess().Id.ToString()
+
+            If settings.CargosWebSyncAgenciesOnStartup Then
+                Try
+                    Dim agencyBootstrapProcessor As New CargosAgencyBootstrapProcessor(
+                        logger,
+                        New SqlAgencySyncRepository(settings.ConnectionString, settings.DbCommandTimeoutSeconds, logger),
+                        New SqlAgencyFrontieraRepository(settings.ConnectionString, settings.DbCommandTimeoutSeconds),
+                        New CargosLookupService(referenceTableRepository),
+                        New AgencyValidationService(),
+                        New CargosWebAgencyClient(settings, logger),
+                        settings.BatchSize,
+                        settings.WorkerClaimTimeoutMinutes
+                    )
+                    agencyBootstrapProcessor.Run(settings.AgenciesSyncProcedure, workerId)
+                Catch ex As Exception
+                    logger.Error("CaRGOS agency bootstrap on startup failed.", ex)
+                    If settings.CargosWebFailStartupIfAgencySyncFails Then
+                        Throw
+                    End If
+                End Try
+            End If
+
             Do While DateTime.Now.Hour < settings.WorkerCutoffHour
                 Try
                     Environment.ExitCode = processor.Run(workerId)
@@ -125,6 +147,10 @@ Module Module1
             Throw New InvalidOperationException("Missing sync procedure name ('Db.ContractsSyncProcedure').")
         End If
 
+        If settings.CargosWebSyncAgenciesOnStartup AndAlso String.IsNullOrWhiteSpace(settings.AgenciesSyncProcedure) Then
+            Throw New InvalidOperationException("Missing agency sync procedure name ('Db.AgenciesSyncProcedure').")
+        End If
+
         If settings.WorkerSleepMilliseconds <= 0 Then
             Throw New InvalidOperationException("'Worker.SleepMilliseconds' must be greater than zero.")
         End If
@@ -144,6 +170,26 @@ Module Module1
 
             If String.IsNullOrWhiteSpace(settings.CargosApiKey) OrElse settings.CargosApiKey.Length < 48 Then
                 Throw New InvalidOperationException("'Cargos.ApiKey' must contain at least 48 characters.")
+            End If
+        End If
+
+        If settings.CargosWebSyncAgenciesOnStartup Then
+            If String.IsNullOrWhiteSpace(settings.CargosWebBaseUrl) Then
+                Throw New InvalidOperationException("Missing 'CargosWeb.BaseUrl'.")
+            End If
+
+            If String.IsNullOrWhiteSpace(settings.CargosWebAgencyCreatePath) Then
+                Throw New InvalidOperationException("Missing 'CargosWeb.AgencyCreatePath'.")
+            End If
+
+            If String.IsNullOrWhiteSpace(settings.CargosWebAuthCookieHeader) Then
+                If String.IsNullOrWhiteSpace(settings.CargosWebUsername) Then
+                    Throw New InvalidOperationException("Missing 'CargosWeb.Username' or 'CargosWeb.AuthCookieHeader'.")
+                End If
+
+                If String.IsNullOrWhiteSpace(settings.CargosWebPassword) Then
+                    Throw New InvalidOperationException("Missing 'CargosWeb.Password' or 'CargosWeb.AuthCookieHeader'.")
+                End If
             End If
         End If
     End Sub

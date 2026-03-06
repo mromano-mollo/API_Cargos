@@ -44,10 +44,14 @@ Namespace Verification
             service.Resolve(record, validation)
 
             AssertTrue(validation.IsValid, "Lookup resolution should succeed for sample values.")
-            AssertTrue(record.AgenziaLuogoCod = "405028001", "Lookup should resolve LUOGHI to cached code.")
             AssertTrue(record.ContrattoTipoP = "P", "Lookup should resolve payment type to cached code.")
             AssertTrue(record.VeicoloTipo = "A", "Lookup should resolve vehicle type to cached code.")
             AssertTrue(record.ConducenteContraenteDocideTipoCod = "CI", "Lookup should resolve document type to cached code.")
+
+            Dim luogoValidation As New ValidationResult()
+            Dim luogoCode = service.ResolveLuogoCode("Alba", "CN", "12051", String.Empty, "AGENZIA_LUOGO_COD", luogoValidation)
+            AssertTrue(luogoValidation.IsValid, "Structured LUOGHI lookup should succeed.")
+            AssertTrue(luogoCode = "405028001", "Structured LUOGHI lookup should resolve ALBA/CN/12051.")
         End Sub
 
         Private Shared Sub VerifyCrypto()
@@ -103,7 +107,8 @@ Namespace Verification
                 Select Case tableId
                     Case 2
                         Return New List(Of CargosReferenceTableRow) From {
-                            New CargosReferenceTableRow With {.RowNumber = 1, .Code = "405028001", .Description = "Roma"}
+                            New CargosReferenceTableRow With {.RowNumber = 1, .Code = "405028001", .Description = "ALBA", .Column3 = "CN", .Column4 = "12051", .RawLine = "405028001#ALBA#CN#12051"},
+                            New CargosReferenceTableRow With {.RowNumber = 2, .Code = "405058001", .Description = "ROMA", .Column3 = "RM", .Column4 = "00100", .RawLine = "405058001#ROMA#RM#00100"}
                         }
                     Case 9
                         Return New List(Of CargosReferenceTableRow) From {
