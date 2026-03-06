@@ -12,6 +12,7 @@ Namespace Orchestration
         Private ReadOnly _syncRepository As ISyncRepository
         Private ReadOnly _frontieraRepository As ICargosFrontieraRepository
         Private ReadOnly _cargosClient As ICargosClient
+        Private ReadOnly _lookupService As ICargosLookupService
         Private ReadOnly _validationService As IValidationService
         Private ReadOnly _recordBuilder As IRecordBuilder
         Private ReadOnly _notificationService As INotificationService
@@ -22,6 +23,7 @@ Namespace Orchestration
             syncRepository As ISyncRepository,
             frontieraRepository As ICargosFrontieraRepository,
             cargosClient As ICargosClient,
+            lookupService As ICargosLookupService,
             validationService As IValidationService,
             recordBuilder As IRecordBuilder,
             notificationService As INotificationService
@@ -31,6 +33,7 @@ Namespace Orchestration
             _syncRepository = syncRepository
             _frontieraRepository = frontieraRepository
             _cargosClient = cargosClient
+            _lookupService = lookupService
             _validationService = validationService
             _recordBuilder = recordBuilder
             _notificationService = notificationService
@@ -57,7 +60,9 @@ Namespace Orchestration
 
                 Dim sendable As New List(Of OutboxRecord)()
                 For Each item In claimedItems
-                    Dim validation = _validationService.Validate(item)
+                    Dim validation As New ValidationResult()
+                    _lookupService.Resolve(item, validation)
+                    validation.Merge(_validationService.Validate(item))
                     If Not validation.IsValid Then
                         _frontieraRepository.SetMissingData(item.Id, validation.MissingFields, validation.ToSummary())
                         Dim missingHash As String = _notificationService.TrySendMissingData(item, validation)

@@ -41,7 +41,28 @@ Module Module1
                 logger
             )
 
+            If settings.CargosSyncTablesOnStartup Then
+                Try
+                    Dim startupReferenceTableRepository As New SqlCargosReferenceTableRepository(
+                        settings.ConnectionString,
+                        settings.DbCommandTimeoutSeconds
+                    )
+                    Dim referenceTableSyncService As ICargosReferenceTableSyncService = New CargosReferenceTableSyncService(settings, logger)
+                    referenceTableSyncService.SyncAll(startupReferenceTableRepository)
+                Catch ex As Exception
+                    logger.Error("CaRGOS reference table sync on startup failed.", ex)
+                    If settings.CargosFailStartupIfTableSyncFails Then
+                        Throw
+                    End If
+                End Try
+            End If
+
             Dim frontieraRepository As ICargosFrontieraRepository = New SqlCargosFrontieraRepository(
+                settings.ConnectionString,
+                settings.DbCommandTimeoutSeconds
+            )
+
+            Dim referenceTableRepository As ICargosReferenceTableRepository = New SqlCargosReferenceTableRepository(
                 settings.ConnectionString,
                 settings.DbCommandTimeoutSeconds
             )
@@ -52,6 +73,7 @@ Module Module1
                 syncRepository,
                 frontieraRepository,
                 New CargosClient(settings, logger),
+                New CargosLookupService(referenceTableRepository),
                 New ValidationService(),
                 New RecordBuilder(),
                 New NotificationService(settings, logger)
@@ -91,6 +113,10 @@ Module Module1
             Throw New InvalidOperationException("Settings could not be loaded.")
         End If
 
+        If settings.RunSelfTests Then
+            Return
+        End If
+
         If String.IsNullOrWhiteSpace(settings.ConnectionString) Then
             Throw New InvalidOperationException("Missing DB connection string. Configure 'CargosDb' in <connectionStrings> or env var 'ConnectionStrings__CargosDb'.")
         End If
@@ -103,7 +129,7 @@ Module Module1
             Throw New InvalidOperationException("'Worker.SleepMilliseconds' must be greater than zero.")
         End If
 
-        If Not settings.DryRun Then
+        If Not settings.DryRun OrElse settings.CargosSyncTablesOnStartup Then
             If String.IsNullOrWhiteSpace(settings.CargosBaseUrl) Then
                 Throw New InvalidOperationException("Missing 'Cargos.BaseUrl'.")
             End If

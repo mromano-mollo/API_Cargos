@@ -153,6 +153,15 @@ For `Check` and `Send`, the body is:
   4) stop after configured local cutoff time (for example 22:00).
 - Overlapping instances must be prevented.
 
+### TR-11 - Reference table sync on startup
+- CaRGOS coded fields that depend on Polizia internal tables must be resolved from local cache tables populated through `api/Tabella`.
+- Add startup setting `Cargos.SyncTablesOnStartup`:
+  - if `true`, sync local reference tables once before entering the processing loop;
+  - if `false`, use the already cached local tables.
+- Add startup setting `Cargos.FailStartupIfTableSyncFails`:
+  - if `true`, abort startup when table sync fails;
+  - if `false`, log the error and continue with the last cached data.
+
 ---
 
 ## 6. Proposed Solution Architecture (Projects)
@@ -199,6 +208,13 @@ Create a solution with these projects (names can vary, but structure must match 
 
 Create a table (or equivalent storage) to track processing per contract line.
 Naming convention: every new CARGOS table must start with `Cargos_` prefix.
+
+### Reference tables
+- `Cargos_Tabella`
+  - stores metadata for each synced CaRGOS coding table (`LUOGHI`, `TIPO_VEICOLO`, `TIPO_DOCUMENTO`, `TIPO_PAGAMENTO`)
+- `Cargos_Tabella_Righe`
+  - stores cached rows downloaded from `api/Tabella`
+  - generic fields: `TableId`, `RowNumber`, `Code`, `Description`, extra columns, raw line, sync timestamps
 
 ### Snapshot table: `Cargos_Contratti`
 Purpose: keep one current state row per contract-line for change detection.
@@ -379,18 +395,38 @@ Fields:
 
 ## 13. Configuration & Secrets
 
-Store in `appsettings.json` + environment overrides:
-- `Cargos:BaseUrl`
-- `Cargos:Username`
-- `Cargos:Password`
-- `Cargos:ApiKey`
-- `Cargos:UseCheckEndpoint` (bool)
-- `Cargos:CheckOnly` (bool)
-- `Worker:PollingIntervalSeconds`
-- `Db:ContractsViewName` (default `Cargos_Vista_Contratti`)
-- `Db:ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`)
-- `Email:SmtpHost`, `Email:SmtpPort`, `Email:User`, `Email:Password`, `Email:From`
-- Branch email lookup settings (mapping strategy)
+Store in `App.config` (`<connectionStrings>` + `<appSettings>`) + environment overrides:
+- `ConnectionStrings:CargosDb` or fallback `Db.ConnectionString`: SQL Server connection string used by the app.
+- `Db.ContractsViewName` (default `Cargos_Vista_Contratti`): logical source view name used by documentation and DB design.
+- `Db.ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`): stored procedure executed at each cycle to sync and enqueue contracts.
+- `Db.CommandTimeoutSeconds`: SQL command timeout for repositories and sync operations.
+- `Worker.BatchSize`: max number of queue rows processed in one cycle and in one outbound batch.
+- `Worker.SleepMilliseconds`: pause between two processing cycles in long-running mode.
+- `Worker.CutoffHour`: local hour after which the process stops for the day.
+- `Worker.ClaimTimeoutMinutes`: time after which a claimed row can be reclaimed if a worker died.
+- `Worker.DryRun`: if `true`, app logs claimed work without calling CaRGOS or changing real send outcomes.
+- `Diagnostics.RunSelfTests`: if `true`, run internal smoke tests and exit.
+- `Cargos.BaseUrl`: base URL of the official CaRGOS API.
+- `Cargos.TokenPath`: relative path of the token endpoint.
+- `Cargos.CheckPath`: relative path of the check endpoint.
+- `Cargos.TabellaPath`: relative path of the reference table endpoint.
+- `Cargos.SendPath`: relative path of the send endpoint.
+- `Cargos.Username`: CaRGOS username used for authentication.
+- `Cargos.Password`: CaRGOS password used for authentication.
+- `Cargos.ApiKey`: CaRGOS API key used to encrypt the access token.
+- `Cargos.Organization`: value sent in `Organization` header, usually aligned with username/account.
+- `Cargos.HttpTimeoutSeconds`: timeout for HTTP calls to CaRGOS.
+- `Cargos.UseCheckEndpoint` (bool): if `true`, call `/api/Check` before `/api/Send`.
+- `Cargos.CheckOnly` (bool): if `true`, call only `/api/Check` and never `/api/Send`.
+- `Cargos.SyncTablesOnStartup` (bool): if `true`, sync `api/Tabella` caches once before entering the main loop.
+- `Cargos.FailStartupIfTableSyncFails` (bool): if `true`, abort startup when reference table sync fails.
+- `Email.SmtpHost`: SMTP server host used for notifications.
+- `Email.SmtpPort`: SMTP server port.
+- `Email.User`: SMTP username, if authentication is required.
+- `Email.Password`: SMTP password, if authentication is required.
+- `Email.From`: sender email address for all notifications.
+- `Email.EnableSsl`: if `true`, enable SSL/TLS for SMTP.
+- `Email.CooldownHours`: anti-spam cooldown before resending the same notification with unchanged content.
 
 Security:
 - Treat Username/Password/ApiKey/SMTP password as secrets (use environment variables or secret store).

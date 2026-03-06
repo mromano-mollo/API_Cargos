@@ -164,6 +164,49 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cargos_Tabella
+    (
+        TableId INT NOT NULL CONSTRAINT PK_Cargos_Tabella PRIMARY KEY,
+        TableName NVARCHAR(50) NOT NULL,
+        LastSyncedAt DATETIME2 NULL,
+        LastSyncStatus NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Tabella_LastSyncStatus DEFAULT (N'NEVER'),
+        LastSyncError NVARCHAR(MAX) NULL,
+        RowCount INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount DEFAULT (0),
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt DEFAULT (SYSUTCDATETIME())
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cargos_Tabella_Righe
+    (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Tabella_Righe PRIMARY KEY,
+        TableId INT NOT NULL,
+        RowNumber INT NOT NULL,
+        Code NVARCHAR(100) NOT NULL,
+        [Description] NVARCHAR(255) NULL,
+        Column3 NVARCHAR(255) NULL,
+        Column4 NVARCHAR(255) NULL,
+        Column5 NVARCHAR(255) NULL,
+        Column6 NVARCHAR(255) NULL,
+        Column7 NVARCHAR(255) NULL,
+        Column8 NVARCHAR(255) NULL,
+        RawLine NVARCHAR(2000) NOT NULL,
+        SyncedAt DATETIME2 NOT NULL,
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt DEFAULT (SYSUTCDATETIME())
+    );
+
+    ALTER TABLE dbo.Cargos_Tabella_Righe
+        ADD CONSTRAINT FK_Cargos_Tabella_Righe_Tabella
+        FOREIGN KEY (TableId) REFERENCES dbo.Cargos_Tabella (TableId);
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Contratti', N'U') IS NOT NULL
 BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContractNo') IS NULL
@@ -325,6 +368,124 @@ BEGIN
     FROM @FrontieraColumns c;
 
     EXEC sys.sp_executesql @SqlAddFrontiera;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'TableName') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD TableName NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Tabella_TableName DEFAULT (N'');
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'LastSyncedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD LastSyncedAt DATETIME2 NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'LastSyncStatus') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD LastSyncStatus NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Tabella_LastSyncStatus_Migrate DEFAULT (N'NEVER');
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'LastSyncError') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD LastSyncError NVARCHAR(MAX) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'RowCount') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD RowCount INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount_Migrate DEFAULT (0);
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'CreatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella', N'UpdatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'TableId') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD TableId INT NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_TableId DEFAULT (0);
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'RowNumber') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD RowNumber INT NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_RowNumber DEFAULT (0);
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Code') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Code NVARCHAR(100) NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_Code DEFAULT (N'');
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Description') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD [Description] NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column3') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column3 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column4') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column4 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column5') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column5 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column6') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column6 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column7') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column7 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'Column8') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD Column8 NVARCHAR(255) NULL;
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'RawLine') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD RawLine NVARCHAR(2000) NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_RawLine DEFAULT (N'');
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'SyncedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD SyncedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_SyncedAt DEFAULT (SYSUTCDATETIME());
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'CreatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+
+    IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'UpdatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
+BEGIN
+    MERGE dbo.Cargos_Tabella AS tgt
+    USING
+    (
+        SELECT 2 AS TableId, N'LUOGHI' AS TableName
+        UNION ALL SELECT 9, N'TIPO_VEICOLO'
+        UNION ALL SELECT 10, N'TIPO_DOCUMENTO'
+        UNION ALL SELECT 11, N'TIPO_PAGAMENTO'
+    ) AS src
+        ON tgt.TableId = src.TableId
+    WHEN MATCHED THEN
+        UPDATE SET
+            tgt.TableName = src.TableName,
+            tgt.UpdatedAt = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN
+        INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, RowCount, CreatedAt, UpdatedAt)
+        VALUES (src.TableId, src.TableName, NULL, N'NEVER', NULL, 0, SYSUTCDATETIME(), SYSUTCDATETIME());
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1
+       FROM sys.indexes
+       WHERE name = N'UQ_Cargos_Tabella_Righe_TableRow'
+         AND object_id = OBJECT_ID(N'dbo.Cargos_Tabella_Righe')
+   )
+BEGIN
+    CREATE UNIQUE INDEX UQ_Cargos_Tabella_Righe_TableRow
+    ON dbo.Cargos_Tabella_Righe (TableId, RowNumber);
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1
+       FROM sys.indexes
+       WHERE name = N'IX_Cargos_Tabella_Righe_TableCode'
+         AND object_id = OBJECT_ID(N'dbo.Cargos_Tabella_Righe')
+   )
+BEGIN
+    CREATE INDEX IX_Cargos_Tabella_Righe_TableCode
+    ON dbo.Cargos_Tabella_Righe (TableId, Code);
 END;
 GO
 

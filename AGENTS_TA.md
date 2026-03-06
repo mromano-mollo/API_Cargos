@@ -41,6 +41,7 @@ The FA requirements remain unchanged. Technical adaptation:
 - Implement orchestration as a long-running single-instance loop inside the console process.
 - Prefer DB-driven sync/enqueue: app calls SQL procedure `Cargos_Sync_Contratti_Frontiera` at run start.
 - The host performs one processor cycle, sleeps for a short interval, and stops at configured cutoff time.
+- Optional startup step: sync local CaRGOS reference tables from `api/Tabella` before entering the loop.
 - SQL Agent can execute the same procedure independently only as optional operational fallback.
 - Optional evolution path: keep code host-agnostic so it can later move to Windows Service/Worker with minimal refactor.
 
@@ -171,6 +172,25 @@ Core fields:
 - `LastRejectHash`
 - `CreatedAt`
 - `UpdatedAt`
+
+### Reference table cache
+- `Cargos_Tabella`
+  - one row per CaRGOS coding table synced from `api/Tabella`
+  - stores sync status, last sync time, row count, and last error
+- `Cargos_Tabella_Righe`
+  - generic cached rows for each coding table
+  - stores `TableId`, `RowNumber`, `Code`, `Description`, extra columns, and raw line
+
+### Lookup service
+- Add app lookup service on top of `Cargos_Tabella_Righe`.
+- Purpose:
+  - if the view already provides a valid CaRGOS code, keep it unchanged;
+  - if the view provides a local/business value instead, resolve it to the correct cached CaRGOS code.
+- Initial usage:
+  - `LUOGHI` fields
+  - `TIPO_VEICOLO`
+  - `TIPO_DOCUMENTO`
+  - `TIPO_PAGAMENTO`
 
 ### Idempotency constraints
 - Unique key on `(ContractNo, LineNo, SnapshotHash)` in `Cargos_Frontiera`.
@@ -400,23 +420,40 @@ Delivery mechanism:
 
 ## 5. Configuration model for .NET Framework console
 
-Use `App.config` (`<appSettings>`) as base, then override from environment variables.
+Use `App.config` (`<connectionStrings>` + `<appSettings>`) as base, then override from environment variables.
 
 Required keys:
+- `ConnectionStrings:CargosDb` or fallback `Db.ConnectionString`
+- `Db.ContractsViewName` (default `Cargos_Vista_Contratti`, primarily used by SQL sync logic)
+- `Db.ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`)
+- `Db.CommandTimeoutSeconds`
+- `Worker.BatchSize`
+- `Worker.SleepMilliseconds`
+- `Worker.CutoffHour`
+- `Worker.ClaimTimeoutMinutes`
+- `Worker.DryRun`
+- `Diagnostics.RunSelfTests`
 - `Cargos.BaseUrl`
+- `Cargos.TokenPath`
+- `Cargos.CheckPath`
+- `Cargos.TabellaPath`
+- `Cargos.SendPath`
 - `Cargos.Username`
 - `Cargos.Password`
 - `Cargos.ApiKey`
+- `Cargos.Organization`
+- `Cargos.HttpTimeoutSeconds`
 - `Cargos.UseCheckEndpoint`
 - `Cargos.CheckOnly`
-- `Db.ContractsViewName` (default `Cargos_Vista_Contratti`, used by sync procedure)
-- `Db.ContractsSyncProcedure` (default `Cargos_Sync_Contratti_Frontiera`)
-- `Worker.PollingIntervalSeconds` (if loop mode is enabled)
+- `Cargos.SyncTablesOnStartup`
+- `Cargos.FailStartupIfTableSyncFails`
 - `Email.SmtpHost`
 - `Email.SmtpPort`
 - `Email.User`
 - `Email.Password`
 - `Email.From`
+- `Email.EnableSsl`
+- `Email.CooldownHours`
 
 Operational recommendation:
 - in production, set secrets through environment variables or secure config provider.
@@ -462,30 +499,32 @@ Correlation:
 3. `OutboxRepository.GetEligible()` from `Cargos_Frontiera`.
 4. Build domain input DTOs.
 5. Apply SQL/view prevalidation metadata if available.
-6. `ValidationService.Validate()` per contract as final gate.
-7. Invalid:
+6. Resolve coded fields through local lookup service if the view did not already provide CaRGOS codes.
+7. `ValidationService.Validate()` per contract as final gate.
+8. Invalid:
    - update status `MISSING_DATA`
    - apply notification policy and email if allowed
-8. Valid:
+9. Valid:
    - status `READY_TO_SEND`
    - build 1505 line
-9. Chunk valid lines into batches of 100.
-10. If `UseCheckEndpoint=True`: call Check and handle data errors.
-11. If `CheckOnly=True`: stop after successful Check and persist `CHECK_OK`.
-12. Otherwise call Send for remaining lines.
-13. Parse per-line outcome:
+10. Chunk valid lines into batches of 100.
+11. If `UseCheckEndpoint=True`: call Check and handle data errors.
+12. If `CheckOnly=True`: stop after successful Check and persist `CHECK_OK`.
+13. Otherwise call Send for remaining lines.
+14. Parse per-line outcome:
     - success -> `SENT_OK` + `TransactionId`
     - data reject -> `SENT_KO_DATA` + email policy
-14. On technical failure of whole call:
+15. On technical failure of whole call:
     - mark impacted records as `SENT_KO_RETRY`
     - schedule `NextRetryAt`
 
 ## 7.1B Service loop
 1. Host starts once.
-2. Execute one processor cycle.
-3. Sleep configured interval (for example 10 seconds).
-4. Repeat while service status is true and local time is before cutoff.
-5. Prevent overlapping instances through single-instance guard.
+2. Optional startup sync of local `api/Tabella` caches.
+3. Execute one processor cycle.
+4. Sleep configured interval (for example 10 seconds).
+5. Repeat while service status is true and local time is before cutoff.
+6. Prevent overlapping instances through single-instance guard.
 
 ## 7.2 Duplicate-send prevention
 Before send, enforce:
@@ -663,6 +702,9 @@ Notes:
 - [x] Added `/api/Check` client support and improved HTTP error classification.
 - [x] Added long-running outer host loop with single-instance mutex and cutoff-hour stop.
 - [x] Added self-test mode for record generation, validation, and crypto smoke checks.
+- [x] Added startup sync service and SQL cache tables for `api/Tabella` reference data.
+- [x] Added `Cargos.SyncTablesOnStartup` and `Cargos.FailStartupIfTableSyncFails` startup controls.
+- [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
 
 ---
 

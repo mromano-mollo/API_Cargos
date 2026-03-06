@@ -29,5 +29,23 @@ Namespace Validation
 
             Return String.Join(" || ", parts)
         End Function
+
+        Public Sub Merge(other As ValidationResult)
+            If other Is Nothing Then
+                Return
+            End If
+
+            For Each fieldName In other.MissingFields
+                If Not MissingFields.Contains(fieldName) Then
+                    MissingFields.Add(fieldName)
+                End If
+            Next
+
+            For Each errorMessage In other.Errors
+                If Not Errors.Contains(errorMessage) Then
+                    Errors.Add(errorMessage)
+                End If
+            Next
+        End Sub
     End Class
 End Namespace

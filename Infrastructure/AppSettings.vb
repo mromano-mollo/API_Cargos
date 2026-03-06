@@ -19,10 +19,13 @@ Namespace Infrastructure
         Public Property CargosOrganization As String
         Public Property CargosTokenPath As String
         Public Property CargosCheckPath As String
+        Public Property CargosTabellaPath As String
         Public Property CargosSendPath As String
         Public Property CargosHttpTimeoutSeconds As Integer
         Public Property CargosUseCheckEndpoint As Boolean
         Public Property CargosCheckOnly As Boolean
+        Public Property CargosSyncTablesOnStartup As Boolean
+        Public Property CargosFailStartupIfTableSyncFails As Boolean
         Public Property EmailSmtpHost As String
         Public Property EmailSmtpPort As Integer
         Public Property EmailUser As String
@@ -62,10 +65,13 @@ Namespace Infrastructure
             settings.CargosOrganization = GetSetting("Cargos.Organization", settings.CargosUsername)
             settings.CargosTokenPath = GetSetting("Cargos.TokenPath", "/api/Token")
             settings.CargosCheckPath = GetSetting("Cargos.CheckPath", "/api/Check")
+            settings.CargosTabellaPath = GetSetting("Cargos.TabellaPath", "/api/Tabella")
             settings.CargosSendPath = GetSetting("Cargos.SendPath", "/api/Send")
             settings.CargosHttpTimeoutSeconds = GetIntSetting("Cargos.HttpTimeoutSeconds", 60)
             settings.CargosUseCheckEndpoint = GetBoolSetting("Cargos.UseCheckEndpoint", False)
             settings.CargosCheckOnly = GetBoolSetting("Cargos.CheckOnly", False)
+            settings.CargosSyncTablesOnStartup = GetBoolSetting("Cargos.SyncTablesOnStartup", False)
+            settings.CargosFailStartupIfTableSyncFails = GetBoolSetting("Cargos.FailStartupIfTableSyncFails", True)
             settings.EmailSmtpHost = GetSetting("Email.SmtpHost", String.Empty)
             settings.EmailSmtpPort = GetIntSetting("Email.SmtpPort", 25)
             settings.EmailUser = GetSetting("Email.User", String.Empty)

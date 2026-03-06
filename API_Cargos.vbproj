@@ -71,8 +71,12 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts\CargosReferenceTableDefinition.vb" />
+    <Compile Include="Contracts\CargosReferenceTableRow.vb" />
     <Compile Include="Contracts\OutboxRecord.vb" />
     <Compile Include="Integration\CargosClient.vb" />
+    <Compile Include="Integration\CargosLookupService.vb" />
+    <Compile Include="Integration\CargosReferenceTableSyncService.vb" />
     <Compile Include="Integration\CargosOutcome.vb" />
     <Compile Include="Integration\CargosTokenProvider.vb" />
     <Compile Include="Integration\CryptoService.vb" />
@@ -85,8 +89,10 @@
     <Compile Include="Notifications\NotificationService.vb" />
     <Compile Include="Orchestration\CargosProcessor.vb" />
     <Compile Include="Persistence\ICargosFrontieraRepository.vb" />
+    <Compile Include="Persistence\ICargosReferenceTableRepository.vb" />
     <Compile Include="Persistence\ISyncRepository.vb" />
     <Compile Include="Persistence\SqlCargosFrontieraRepository.vb" />
+    <Compile Include="Persistence\SqlCargosReferenceTableRepository.vb" />
     <Compile Include="Persistence\SqlSyncRepository.vb" />
     <Compile Include="Verification\SelfTestRunner.vb" />
     <Compile Include="Validation\ValidationResult.vb" />
