@@ -54,7 +54,7 @@ BEGIN
     (
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Contratti PRIMARY KEY,
         ContractNo NVARCHAR(50) NOT NULL,
-        LineNo BIGINT NOT NULL,
+        [LineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
@@ -99,7 +99,7 @@ BEGIN
     );
 
     ALTER TABLE dbo.Cargos_Contratti
-        ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, LineNo);
+        ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, [LineNo]);
 END;
 GO
 
@@ -524,7 +524,7 @@ BEGIN
     (
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Frontiera PRIMARY KEY,
         ContractNo NVARCHAR(50) NOT NULL,
-        LineNo BIGINT NOT NULL,
+        [LineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
@@ -588,7 +588,7 @@ BEGIN
         LastSyncedAt DATETIME2 NULL,
         LastSyncStatus NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Tabella_LastSyncStatus DEFAULT (N'NEVER'),
         LastSyncError NVARCHAR(MAX) NULL,
-        RowCount INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount DEFAULT (0),
+        [RowCount] INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount DEFAULT (0),
         CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt DEFAULT (SYSUTCDATETIME()),
         UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt DEFAULT (SYSUTCDATETIME())
     );
@@ -705,7 +705,7 @@ BEGIN
           AND parent_object_id = OBJECT_ID(N'dbo.Cargos_Contratti')
     )
         ALTER TABLE dbo.Cargos_Contratti
-            ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, LineNo);
+            ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, [LineNo]);
 END;
 GO
 
@@ -801,7 +801,7 @@ BEGIN
         ALTER TABLE dbo.Cargos_Tabella ADD LastSyncError NVARCHAR(MAX) NULL;
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella', N'RowCount') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella ADD RowCount INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount_Migrate DEFAULT (0);
+        ALTER TABLE dbo.Cargos_Tabella ADD [RowCount] INT NOT NULL CONSTRAINT DF_Cargos_Tabella_RowCount_Migrate DEFAULT (0);
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella', N'CreatedAt') IS NULL
         ALTER TABLE dbo.Cargos_Tabella ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt_Migrate DEFAULT (SYSUTCDATETIME());
@@ -862,10 +862,10 @@ BEGIN
     MERGE dbo.Cargos_Tabella AS tgt
     USING
     (
-        SELECT 2 AS TableId, N'LUOGHI' AS TableName
-        UNION ALL SELECT 9, N'TIPO_VEICOLO'
-        UNION ALL SELECT 10, N'TIPO_DOCUMENTO'
-        UNION ALL SELECT 11, N'TIPO_PAGAMENTO'
+        SELECT 0 AS TableId, N'TIPO_PAGAMENTO' AS TableName
+        UNION ALL SELECT 1, N'LUOGHI'
+        UNION ALL SELECT 2, N'TIPO_VEICOLO'
+        UNION ALL SELECT 3, N'TIPO_DOCUMENTO'
     ) AS src
         ON tgt.TableId = src.TableId
     WHEN MATCHED THEN
@@ -873,7 +873,7 @@ BEGIN
             tgt.TableName = src.TableName,
             tgt.UpdatedAt = SYSUTCDATETIME()
     WHEN NOT MATCHED THEN
-        INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, RowCount, CreatedAt, UpdatedAt)
+        INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, [RowCount], CreatedAt, UpdatedAt)
         VALUES (src.TableId, src.TableName, NULL, N'NEVER', NULL, 0, SYSUTCDATETIME(), SYSUTCDATETIME());
 END;
 GO
@@ -915,7 +915,7 @@ BEGIN
         DROP INDEX UQ_Cargos_Frontiera_Snapshot ON dbo.Cargos_Frontiera;
 
     CREATE UNIQUE INDEX UQ_Cargos_Frontiera_Snapshot
-    ON dbo.Cargos_Frontiera (ContractNo, LineNo, SnapshotHash)
+    ON dbo.Cargos_Frontiera (ContractNo, [LineNo], SnapshotHash)
     WHERE SnapshotHash IS NOT NULL;
 END;
 GO
@@ -1025,7 +1025,7 @@ BEGIN
     DECLARE @Queued TABLE
     (
         ContractNo NVARCHAR(50) NOT NULL,
-        LineNo BIGINT NOT NULL,
+        [LineNo] BIGINT NOT NULL,
         SnapshotHash NVARCHAR(128) NOT NULL
     );
 
@@ -1035,7 +1035,7 @@ BEGIN
     CREATE TABLE #SourceContracts
     (
         ContractNo NVARCHAR(50) NOT NULL,
-        LineNo BIGINT NOT NULL,
+        [LineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
@@ -1216,21 +1216,21 @@ BEGIN
     FROM #SourceContracts s
     LEFT JOIN dbo.Cargos_Contratti c
         ON c.ContractNo = s.ContractNo
-       AND c.LineNo = s.LineNo
+       AND c.[LineNo] = s.[LineNo]
     OUTER APPLY
     (
         SELECT TOP (1)
             f.Status
         FROM dbo.Cargos_Frontiera f
         WHERE f.ContractNo = s.ContractNo
-          AND f.LineNo = s.LineNo
+          AND f.[LineNo] = s.[LineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
     ) lastf;
 
     MERGE dbo.Cargos_Contratti AS tgt
     USING #SourceContracts AS src
         ON tgt.ContractNo = src.ContractNo
-       AND tgt.LineNo = src.LineNo
+       AND tgt.[LineNo] = src.[LineNo]
     WHEN MATCHED THEN
         UPDATE SET
             tgt.CargosContractId = src.CargosContractId,
@@ -1274,7 +1274,7 @@ BEGIN
     WHEN NOT MATCHED THEN
         INSERT
         (
-            ContractNo, LineNo, CargosContractId, BranchId, BranchEmail,
+            ContractNo, [LineNo], CargosContractId, BranchId, BranchEmail,
             ContrattoId, ContrattoData, ContrattoTipoP,
             ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
             ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -1290,7 +1290,7 @@ BEGIN
         )
         VALUES
         (
-            src.ContractNo, src.LineNo, src.CargosContractId, src.BranchId, src.BranchEmail,
+            src.ContractNo, src.[LineNo], src.CargosContractId, src.BranchId, src.BranchEmail,
             src.ContrattoId, src.ContrattoData, src.ContrattoTipoP,
             src.ContrattoCheckoutData, src.ContrattoCheckoutLuogoCod, src.ContrattoCheckoutIndirizzo,
             src.ContrattoCheckinData, src.ContrattoCheckinLuogoCod, src.ContrattoCheckinIndirizzo,
@@ -1307,7 +1307,7 @@ BEGIN
 
     INSERT INTO dbo.Cargos_Frontiera
     (
-        ContractNo, LineNo, CargosContractId, BranchId, BranchEmail,
+        ContractNo, [LineNo], CargosContractId, BranchId, BranchEmail,
         ContrattoId, ContrattoData, ContrattoTipoP,
         ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
         ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -1322,10 +1322,10 @@ BEGIN
         LastMissingEmailAt, LastMissingFieldsHash, LastRejectEmailAt, LastRejectHash,
         CreatedAt, UpdatedAt
     )
-    OUTPUT inserted.ContractNo, inserted.LineNo, inserted.SnapshotHash
-        INTO @Queued (ContractNo, LineNo, SnapshotHash)
+    OUTPUT inserted.ContractNo, inserted.[LineNo], inserted.SnapshotHash
+        INTO @Queued (ContractNo, [LineNo], SnapshotHash)
     SELECT
-        s.ContractNo, s.LineNo, s.CargosContractId, s.BranchId, s.BranchEmail,
+        s.ContractNo, s.[LineNo], s.CargosContractId, s.BranchId, s.BranchEmail,
         s.ContrattoId, s.ContrattoData, s.ContrattoTipoP,
         s.ContrattoCheckoutData, s.ContrattoCheckoutLuogoCod, s.ContrattoCheckoutIndirizzo,
         s.ContrattoCheckinData, s.ContrattoCheckinLuogoCod, s.ContrattoCheckinIndirizzo,
@@ -1349,7 +1349,7 @@ BEGIN
             f.LastRejectHash
         FROM dbo.Cargos_Frontiera f
         WHERE f.ContractNo = s.ContractNo
-          AND f.LineNo = s.LineNo
+          AND f.[LineNo] = s.[LineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
     ) lastf
     WHERE s.QueueReason IS NOT NULL
@@ -1358,7 +1358,7 @@ BEGIN
         SELECT 1
         FROM dbo.Cargos_Frontiera f
         WHERE f.ContractNo = s.ContractNo
-          AND f.LineNo = s.LineNo
+          AND f.[LineNo] = s.[LineNo]
           AND f.SnapshotHash = s.SnapshotHash
     );
 
@@ -1370,7 +1370,7 @@ BEGIN
     FROM dbo.Cargos_Contratti c
     INNER JOIN @Queued q
         ON q.ContractNo = c.ContractNo
-       AND q.LineNo = c.LineNo;
+       AND q.[LineNo] = c.[LineNo];
 
     SELECT QueuedItems = COUNT(1)
     FROM @Queued;
