@@ -176,9 +176,11 @@ For `Check` and `Send`, the body is:
 ### TR-12 - Agency initial load through CARGOS_WEB
 - Initial agency load is handled through `CARGOS_WEB/Agenzia/Create`, not through the public `CARGOS_API`.
 - Current observed web login flow is two-step:
-  1) POST credentials to `CARGOS_WEB/Login/Default`
-  2) user enters OTP and POSTs to `CARGOS_WEB/Login/LoginAuth`
+  1) GET login page `CARGOS_WEB/Login/Login`
+  2) POST credentials to `CARGOS_WEB/Login/Default`
+  3) user enters OTP and POSTs to `CARGOS_WEB/Login/LoginAuth`
 - OTP is interactive and must be provided by the operator at runtime unless a valid pre-authenticated cookie is supplied.
+- If the web session expires during agency bootstrap, the client should recreate its HTTP transport, re-authenticate, request OTP again, and retry the current agency once.
 - Add startup setting `CargosWeb.SyncAgenciesOnStartup`:
   - if `true`, sync agency source rows and attempt bootstrap on CaRGOS before entering the contract loop;
   - if `false`, skip agency bootstrap.
@@ -581,6 +583,8 @@ Add correlation id per batch to link logs.
 - [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
 - [x] Added startup agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
 - [x] Updated agency bootstrap auth flow to handle `Login/Default` + interactive OTP on `Login/LoginAuth`.
+- [x] Corrected agency web auth to separate login page GET (`Login/Login`) from credentials POST (`Login/Default`).
+- [x] Added automatic one-time re-authentication and client recreation when `CARGOS_WEB` session expires mid-run.
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` startup/auth settings for agency bootstrap.
 - [x] Added structured agency luogo handling (`AgenziaCity`, `AgenziaCounty`, `AgenziaPostCode`) for `AGENZIA_LUOGO_COD` resolution.

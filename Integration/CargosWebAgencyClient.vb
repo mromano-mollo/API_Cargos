@@ -12,23 +12,39 @@ Namespace Integration
 
         Private ReadOnly _settings As AppSettings
         Private ReadOnly _logger As ILogger
-        Private ReadOnly _handler As HttpClientHandler
-        Private ReadOnly _httpClient As HttpClient
+        Private _handler As HttpClientHandler
+        Private _httpClient As HttpClient
         Private _isAuthenticated As Boolean
 
         Public Sub New(settings As AppSettings, logger As ILogger)
             _settings = settings
             _logger = logger
+            RecreateHttpClient()
+        End Sub
+
+        Private Sub RecreateHttpClient()
+            If _httpClient IsNot Nothing Then
+                _httpClient.Dispose()
+            End If
+
+            If _handler IsNot Nothing Then
+                _handler.Dispose()
+            End If
+
             _handler = New HttpClientHandler() With {
                 .AllowAutoRedirect = True,
                 .CookieContainer = New CookieContainer()
             }
             _httpClient = New HttpClient(_handler) With {
-                .Timeout = TimeSpan.FromSeconds(settings.CargosHttpTimeoutSeconds)
+                .Timeout = TimeSpan.FromSeconds(_settings.CargosHttpTimeoutSeconds)
             }
         End Sub
 
         Public Function CreateAgency(item As AgencyOutboxRecord) As CargosLineOutcome Implements IAgencyCreateClient.CreateAgency
+            Return CreateAgency(item, True)
+        End Function
+
+        Private Function CreateAgency(item As AgencyOutboxRecord, allowReauthenticate As Boolean) As CargosLineOutcome
             Try
                 EnsureAuthenticated()
 
@@ -69,10 +85,7 @@ Namespace Integration
                         End If
 
                         If IsLoginResponse(responseBody, finalUri) Then
-                            Return New CargosLineOutcome With {
-                                .OutcomeType = CargosOutcomeType.TechnicalError,
-                                .ErrorMessage = String.Format("CARGOS_WEB returned the login page instead of the agency create result. FinalUri={0}", If(finalUri Is Nothing, String.Empty, finalUri.AbsoluteUri))
-                            }
+                            Throw New InvalidOperationException(String.Format("CARGOS_WEB returned the login page instead of the agency create result. FinalUri={0}", If(finalUri Is Nothing, String.Empty, finalUri.AbsoluteUri)))
                         End If
 
                         If ContainsValidationErrors(responseBody) Then
@@ -88,6 +101,12 @@ Namespace Integration
                     End Using
                 End Using
             Catch ex As Exception
+                If allowReauthenticate AndAlso IsAuthenticationFailure(ex) Then
+                    _logger.Info("CARGOS_WEB session expired. Re-authenticating and retrying the agency create once.")
+                    ResetAuthenticationState()
+                    Return CreateAgency(item, False)
+                End If
+
                 _logger.Error("CARGOS_WEB agency create call failed.", ex)
                 Return New CargosLineOutcome With {
                     .OutcomeType = CargosOutcomeType.TechnicalError,
@@ -253,6 +272,24 @@ Namespace Integration
             Return html.IndexOf("type=""password""", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
                    html.IndexOf("login", StringComparison.OrdinalIgnoreCase) >= 0
         End Function
+
+        Private Shared Function IsAuthenticationFailure(ex As Exception) As Boolean
+            If ex Is Nothing OrElse String.IsNullOrWhiteSpace(ex.Message) Then
+                Return False
+            End If
+
+            Return ex.Message.IndexOf("session is not authenticated", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+                   ex.Message.IndexOf("returned the login page", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+                   ex.Message.IndexOf("did not create an authenticated session", StringComparison.OrdinalIgnoreCase) >= 0
+        End Function
+
+        Private Sub ResetAuthenticationState()
+            _isAuthenticated = False
+
+            If String.IsNullOrWhiteSpace(_settings.CargosWebAuthCookieHeader) Then
+                RecreateHttpClient()
+            End If
+        End Sub
 
         Private Shared Function ExtractFormFields(html As String) As Dictionary(Of String, String)
             Dim result As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)

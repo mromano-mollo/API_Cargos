@@ -43,8 +43,10 @@ The FA requirements remain unchanged. Technical adaptation:
 - The host performs one processor cycle, sleeps for a short interval, and stops at configured cutoff time.
 - Optional startup step: sync local CaRGOS reference tables from `api/Tabella` before entering the loop.
 - Agency bootstrap on `CARGOS_WEB` uses the observed two-step login flow:
+  - GET login page `Login/Login`
   - credentials POST to `Login/Default`
   - interactive OTP POST to `Login/LoginAuth`
+- If the portal invalidates the web session during bootstrap, the client must recreate `HttpClient` + `HttpClientHandler`, re-authenticate, and retry the current agency once.
 - SQL Agent can execute the same procedure independently only as optional operational fallback.
 - Optional evolution path: keep code host-agnostic so it can later move to Windows Service/Worker with minimal refactor.
 
@@ -744,6 +746,8 @@ Notes:
 - [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
 - [x] Added agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
 - [x] Updated web-agency bootstrap auth to support `Login/Default` plus interactive OTP on `Login/LoginAuth`.
+- [x] Corrected web-agency auth to GET `Login/Login` before POSTing credentials to `Login/Default`.
+- [x] Added automatic transport recreation and one-time re-authentication retry when `CARGOS_WEB` session expires.
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` settings for web auth and startup agency load.
 - [x] Added structured agency luogo resolution using `AgenziaCity`, `AgenziaCounty`, and `AgenziaPostCode`.
