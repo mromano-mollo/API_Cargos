@@ -2,6 +2,8 @@
 Imports API_Cargos.Integration
 Imports API_Cargos.Persistence
 Imports API_Cargos.Validation
+Imports System.Text
+Imports System.Web.Script.Serialization
 
 Namespace Verification
     Public NotInheritable Class SelfTestRunner
@@ -9,6 +11,7 @@ Namespace Verification
             VerifyValidation()
             VerifyLookupResolution()
             VerifyRecordBuilder()
+            VerifyReferenceTableParsing()
             VerifyCrypto()
         End Sub
 
@@ -52,6 +55,24 @@ Namespace Verification
             Dim luogoCode = service.ResolveLuogoCode("Alba", "CN", "12051", String.Empty, "AGENZIA_LUOGO_COD", luogoValidation)
             AssertTrue(luogoValidation.IsValid, "Structured LUOGHI lookup should succeed.")
             AssertTrue(luogoCode = "405028001", "Structured LUOGHI lookup should resolve ALBA/CN/12051.")
+        End Sub
+
+        Private Shared Sub VerifyReferenceTableParsing()
+            Dim decodedContent As String =
+                "ID#Descrizione" & vbCrLf &
+                "0#Carta di Credito" & vbCrLf &
+                "1#Contanti" & vbCrLf
+            Dim payload As String = Convert.ToBase64String(Encoding.UTF8.GetBytes(decodedContent))
+            Dim json As String = "{""esito"":true,""errore"":null,""filename"":""TIPO_PAGAMENTO.dat"",""file"":""" & payload & """}"
+            Dim wrappedJson As String = New JavaScriptSerializer().Serialize(json)
+
+            Dim rows = CargosReferenceTableSyncService.ParseRowsFromApiResponse(json, "TIPO_PAGAMENTO")
+            Dim wrappedRows = CargosReferenceTableSyncService.ParseRowsFromApiResponse(wrappedJson, "TIPO_PAGAMENTO")
+
+            AssertTrue(rows.Count = 2, "Reference table parser should skip header and read data rows.")
+            AssertTrue(rows(0).Code = "0", "Reference table parser should read the first code column.")
+            AssertTrue(rows(1).Description = "Contanti", "Reference table parser should decode base64 content.")
+            AssertTrue(wrappedRows.Count = 2, "Reference table parser should also handle JSON-string wrapped payloads.")
         End Sub
 
         Private Shared Sub VerifyCrypto()
@@ -105,20 +126,20 @@ Namespace Verification
 
             Public Function GetRows(tableId As Integer) As IList(Of CargosReferenceTableRow) Implements ICargosReferenceTableRepository.GetRows
                 Select Case tableId
-                    Case 2
+                    Case 1
                         Return New List(Of CargosReferenceTableRow) From {
                             New CargosReferenceTableRow With {.RowNumber = 1, .Code = "405028001", .Description = "ALBA", .Column3 = "CN", .Column4 = "12051", .RawLine = "405028001#ALBA#CN#12051"},
                             New CargosReferenceTableRow With {.RowNumber = 2, .Code = "405058001", .Description = "ROMA", .Column3 = "RM", .Column4 = "00100", .RawLine = "405058001#ROMA#RM#00100"}
                         }
-                    Case 9
+                    Case 2
                         Return New List(Of CargosReferenceTableRow) From {
                             New CargosReferenceTableRow With {.RowNumber = 1, .Code = "A", .Description = "Autovettura"}
                         }
-                    Case 10
+                    Case 3
                         Return New List(Of CargosReferenceTableRow) From {
                             New CargosReferenceTableRow With {.RowNumber = 1, .Code = "CI", .Description = "Carta Identita"}
                         }
-                    Case 11
+                    Case 0
                         Return New List(Of CargosReferenceTableRow) From {
                             New CargosReferenceTableRow With {.RowNumber = 1, .Code = "P", .Description = "Contanti"}
                         }

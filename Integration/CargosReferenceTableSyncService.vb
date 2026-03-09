@@ -2,6 +2,7 @@
 Imports System.Linq
 Imports System.Net.Http
 Imports System.Text
+Imports System.Web.Script.Serialization
 Imports API_Cargos.Contracts
 Imports API_Cargos.Infrastructure
 Imports API_Cargos.Persistence
@@ -67,9 +68,62 @@ Namespace Integration
                         Throw New InvalidOperationException(String.Format("Tabella {0} sync failed ({1}): {2}", definition.TableName, CInt(response.StatusCode), Truncate(responseBody, 500)))
                     End If
 
-                    Return ParseRows(responseBody)
+                    Return ParseRowsFromApiResponse(responseBody, definition.TableName)
                 End Using
             End Using
+        End Function
+
+        Friend Shared Function ParseRowsFromApiResponse(responseBody As String, Optional tableName As String = Nothing) As IList(Of CargosReferenceTableRow)
+            Dim decodedContent As String = DecodeFileContentFromApiResponse(responseBody, tableName)
+            Return ParseRows(decodedContent)
+        End Function
+
+        Private Shared Function DecodeFileContentFromApiResponse(responseBody As String, tableName As String) As String
+            If String.IsNullOrWhiteSpace(responseBody) Then
+                Throw New InvalidOperationException(BuildTableMessage(tableName, "api/Tabella returned an empty response body."))
+            End If
+
+            Dim serializer As New JavaScriptSerializer()
+            Dim payloadObject As Object = serializer.DeserializeObject(responseBody)
+
+            If TypeOf payloadObject Is String Then
+                payloadObject = serializer.DeserializeObject(CStr(payloadObject))
+            End If
+
+            Dim payload = TryCast(payloadObject, IDictionary(Of String, Object))
+            If payload Is Nothing Then
+                Throw New InvalidOperationException(BuildTableMessage(tableName, "api/Tabella response is not a valid JSON object."))
+            End If
+
+            Dim esito As Boolean = False
+            If payload.ContainsKey("esito") AndAlso payload("esito") IsNot Nothing Then
+                esito = Convert.ToBoolean(payload("esito"))
+            End If
+
+            Dim errore As String = String.Empty
+            If payload.ContainsKey("errore") AndAlso payload("errore") IsNot Nothing Then
+                errore = Convert.ToString(payload("errore")).Trim()
+            End If
+
+            If Not esito Then
+                Throw New InvalidOperationException(BuildTableMessage(tableName, "api/Tabella returned esito=false. " & errore))
+            End If
+
+            Dim fileBase64 As String = String.Empty
+            If payload.ContainsKey("file") AndAlso payload("file") IsNot Nothing Then
+                fileBase64 = Convert.ToString(payload("file")).Trim()
+            End If
+
+            If String.IsNullOrWhiteSpace(fileBase64) Then
+                Throw New InvalidOperationException(BuildTableMessage(tableName, "api/Tabella response does not contain the base64 file payload."))
+            End If
+
+            Try
+                Dim decodedBytes As Byte() = Convert.FromBase64String(fileBase64)
+                Return Encoding.UTF8.GetString(decodedBytes)
+            Catch ex As FormatException
+                Throw New InvalidOperationException(BuildTableMessage(tableName, "api/Tabella returned an invalid base64 file payload."), ex)
+            End Try
         End Function
 
         Private Shared Function ParseRows(csvContent As String) As IList(Of CargosReferenceTableRow)
@@ -113,7 +167,9 @@ Namespace Integration
 
             Dim first As String = GetColumn(columns, 0).ToUpperInvariant()
             Dim second As String = GetColumn(columns, 1).ToUpperInvariant()
-            Return first.Contains("COD") OrElse first.Contains("ID") OrElse second.Contains("DESC") OrElse second.Contains("DENOM") OrElse second.Contains("NOME")
+            Dim firstIsHeader As Boolean = first = "ID" OrElse first = "CODICE"
+            Dim secondIsHeader As Boolean = second.Contains("DESCR") OrElse second.Contains("DENOM") OrElse second = "NOME"
+            Return firstIsHeader AndAlso secondIsHeader
         End Function
 
         Private Shared Function GetColumn(columns As String(), index As Integer) As String
@@ -154,6 +210,14 @@ Namespace Integration
             End If
 
             Return value.Substring(0, maxLength)
+        End Function
+
+        Private Shared Function BuildTableMessage(tableName As String, message As String) As String
+            If String.IsNullOrWhiteSpace(tableName) Then
+                Return message
+            End If
+
+            Return String.Format("Table {0}: {1}", tableName, message)
         End Function
     End Class
 End Namespace

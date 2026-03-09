@@ -33,7 +33,8 @@ Namespace Integration
                 EnsureAuthenticated()
 
                 Dim createUrl As String = BuildUrl(_settings.CargosWebBaseUrl, _settings.CargosWebAgencyCreatePath)
-                Dim createPage As String = GetHtml(createUrl)
+                Dim createPageUri As Uri = Nothing
+                Dim createPage As String = GetHtml(createUrl, createPageUri, True)
                 Dim verificationToken As String = ExtractVerificationToken(createPage, _settings.CargosWebVerifyTokenField)
                 If String.IsNullOrWhiteSpace(verificationToken) Then
                     Return New CargosLineOutcome With {
@@ -59,10 +60,18 @@ Namespace Integration
 
                     Using response As HttpResponseMessage = _httpClient.SendAsync(request).GetAwaiter().GetResult()
                         Dim responseBody As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                        Dim finalUri As Uri = If(response.RequestMessage IsNot Nothing, response.RequestMessage.RequestUri, Nothing)
                         If Not response.IsSuccessStatusCode Then
                             Return New CargosLineOutcome With {
                                 .OutcomeType = ClassifyHttpFailure(response.StatusCode),
                                 .ErrorMessage = String.Format("Agency create failed ({0}): {1}", CInt(response.StatusCode), Truncate(responseBody, 1000))
+                            }
+                        End If
+
+                        If IsLoginResponse(responseBody, finalUri) Then
+                            Return New CargosLineOutcome With {
+                                .OutcomeType = CargosOutcomeType.TechnicalError,
+                                .ErrorMessage = String.Format("CARGOS_WEB returned the login page instead of the agency create result. FinalUri={0}", If(finalUri Is Nothing, String.Empty, finalUri.AbsoluteUri))
                             }
                         End If
 
@@ -101,51 +110,86 @@ Namespace Integration
                 Throw New InvalidOperationException("CargosWeb authentication requires either AuthCookieHeader or Username/Password.")
             End If
 
+            Dim loginPageUrl As String = BuildUrl(_settings.CargosWebBaseUrl, _settings.CargosWebLoginPagePath)
             Dim loginUrl As String = BuildUrl(_settings.CargosWebBaseUrl, _settings.CargosWebLoginPath)
-            Dim loginPage As String = GetHtml(loginUrl)
-            Dim verificationToken As String = ExtractVerificationToken(loginPage, _settings.CargosWebVerifyTokenField)
+            Dim loginPage As String = GetHtml(loginPageUrl, Nothing, False)
+            Dim formData As Dictionary(Of String, String) = ExtractFormFields(loginPage)
+            UpsertFormField(formData, _settings.CargosWebVerifyTokenField, ExtractVerificationToken(loginPage, _settings.CargosWebVerifyTokenField))
+            UpsertFormField(formData, _settings.CargosWebLoginUsernameField, _settings.CargosWebUsername)
+            UpsertFormField(formData, _settings.CargosWebLoginPasswordField, _settings.CargosWebPassword)
+            UpsertFormField(formData, _settings.CargosWebLoginAccediField, "Accedi")
 
-            Dim formData As New List(Of KeyValuePair(Of String, String))()
-            If Not String.IsNullOrWhiteSpace(verificationToken) Then
-                formData.Add(New KeyValuePair(Of String, String)(_settings.CargosWebVerifyTokenField, verificationToken))
+            Dim loginResponseUri As Uri = Nothing
+            Dim loginResponseBody As String = PostForm(loginUrl, formData, loginPageUrl, loginResponseUri)
+
+            If RequiresOtpChallenge(loginResponseBody) Then
+                Dim otpCode As String = PromptForOtp()
+                Dim otpUrl As String = BuildUrl(_settings.CargosWebBaseUrl, _settings.CargosWebLoginOtpPath)
+                Dim otpFormData As Dictionary(Of String, String) = ExtractFormFields(loginResponseBody)
+                UpsertFormField(otpFormData, _settings.CargosWebVerifyTokenField, ExtractVerificationToken(loginResponseBody, _settings.CargosWebVerifyTokenField))
+                UpsertFormField(otpFormData, _settings.CargosWebLoginUsernameField, _settings.CargosWebUsername)
+                UpsertFormField(otpFormData, _settings.CargosWebLoginPasswordField, _settings.CargosWebPassword)
+                UpsertFormField(otpFormData, _settings.CargosWebOtpCodeField, otpCode)
+                UpsertFormField(otpFormData, _settings.CargosWebLoginAccediField, "Accedi")
+
+                Dim otpResponseUri As Uri = Nothing
+                Dim otpResponseBody As String = PostForm(otpUrl, otpFormData, otpUrl, otpResponseUri)
+                If IsLoginResponse(otpResponseBody, otpResponseUri) Then
+                    If ContainsValidationErrors(otpResponseBody) Then
+                        Throw New InvalidOperationException("CARGOS_WEB OTP validation failed.")
+                    End If
+
+                    Throw New InvalidOperationException(String.Format("CARGOS_WEB OTP step did not create an authenticated session. FinalUri={0}", If(otpResponseUri Is Nothing, String.Empty, otpResponseUri.AbsoluteUri)))
+                End If
+            ElseIf IsLoginResponse(loginResponseBody, loginResponseUri) Then
+                If ContainsValidationErrors(loginResponseBody) Then
+                    Throw New InvalidOperationException("CARGOS_WEB login returned validation errors.")
+                End If
+
+                Throw New InvalidOperationException(String.Format("CARGOS_WEB credentials step did not reach OTP or an authenticated session. FinalUri={0}", If(loginResponseUri Is Nothing, String.Empty, loginResponseUri.AbsoluteUri)))
             End If
 
-            formData.Add(New KeyValuePair(Of String, String)(_settings.CargosWebLoginUsernameField, _settings.CargosWebUsername))
-            formData.Add(New KeyValuePair(Of String, String)(_settings.CargosWebLoginPasswordField, _settings.CargosWebPassword))
-
-            Using request As New HttpRequestMessage(HttpMethod.Post, loginUrl)
-                ApplyCookieHeader(request)
-                request.Content = New FormUrlEncodedContent(formData)
-                request.Headers.Referrer = New Uri(loginUrl)
-
-                Using response As HttpResponseMessage = _httpClient.SendAsync(request).GetAwaiter().GetResult()
-                    Dim responseBody As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
-                    If Not response.IsSuccessStatusCode Then
-                        Throw New InvalidOperationException(String.Format("CARGOS_WEB login failed ({0}): {1}", CInt(response.StatusCode), Truncate(responseBody, 1000)))
-                    End If
-
-                    If response.RequestMessage IsNot Nothing AndAlso response.RequestMessage.RequestUri IsNot Nothing Then
-                        If response.RequestMessage.RequestUri.AbsolutePath.IndexOf("/Login", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso ContainsValidationErrors(responseBody) Then
-                            Throw New InvalidOperationException("CARGOS_WEB login returned validation errors.")
-                        End If
-                    End If
-                End Using
-            End Using
+            Dim protectedPageUri As Uri = Nothing
+            GetHtml(BuildUrl(_settings.CargosWebBaseUrl, _settings.CargosWebAgencyCreatePath), protectedPageUri, True)
 
             _isAuthenticated = True
         End Sub
 
-        Private Function GetHtml(url As String) As String
+        Private Function GetHtml(url As String, ByRef finalUri As Uri, expectAuthenticated As Boolean) As String
             Using request As New HttpRequestMessage(HttpMethod.Get, url)
                 ApplyCookieHeader(request)
 
                 Using response As HttpResponseMessage = _httpClient.SendAsync(request).GetAwaiter().GetResult()
                     Dim html As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                    finalUri = If(response.RequestMessage IsNot Nothing, response.RequestMessage.RequestUri, Nothing)
                     If Not response.IsSuccessStatusCode Then
                         Throw New InvalidOperationException(String.Format("CARGOS_WEB GET failed ({0}): {1}", CInt(response.StatusCode), Truncate(html, 1000)))
                     End If
 
+                    If expectAuthenticated AndAlso IsLoginResponse(html, finalUri) Then
+                        Throw New InvalidOperationException(String.Format("CARGOS_WEB session is not authenticated. FinalUri={0}", If(finalUri Is Nothing, String.Empty, finalUri.AbsoluteUri)))
+                    End If
+
                     Return html
+                End Using
+            End Using
+        End Function
+
+        Private Function PostForm(url As String, formData As IDictionary(Of String, String), referrerUrl As String, ByRef finalUri As Uri) As String
+            Using request As New HttpRequestMessage(HttpMethod.Post, url)
+                ApplyCookieHeader(request)
+                request.Content = New FormUrlEncodedContent(formData)
+                request.Headers.Referrer = New Uri(referrerUrl)
+
+                Using response As HttpResponseMessage = _httpClient.SendAsync(request).GetAwaiter().GetResult()
+                    Dim responseBody As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                    finalUri = If(response.RequestMessage IsNot Nothing, response.RequestMessage.RequestUri, Nothing)
+
+                    If Not response.IsSuccessStatusCode Then
+                        Throw New InvalidOperationException(String.Format("CARGOS_WEB POST failed ({0}) on {1}: {2}", CInt(response.StatusCode), url, Truncate(responseBody, 1000)))
+                    End If
+
+                    Return responseBody
                 End Using
             End Using
         End Function
@@ -178,6 +222,87 @@ Namespace Integration
             Return html.IndexOf("validation-summary-errors", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
                    html.IndexOf("field-validation-error", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
                    html.IndexOf("input-validation-error", StringComparison.OrdinalIgnoreCase) >= 0
+        End Function
+
+        Private Function RequiresOtpChallenge(html As String) As Boolean
+            If String.IsNullOrWhiteSpace(html) Then
+                Return False
+            End If
+
+            Return Regex.IsMatch(html, String.Format("name=""{0}""", Regex.Escape(_settings.CargosWebOtpCodeField)), RegexOptions.IgnoreCase)
+        End Function
+
+        Private Function IsLoginResponse(html As String, requestUri As Uri) As Boolean
+            If requestUri IsNot Nothing AndAlso requestUri.AbsolutePath.IndexOf("/Login", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                Return True
+            End If
+
+            If String.IsNullOrWhiteSpace(html) Then
+                Return False
+            End If
+
+            Dim usernameField As String = Regex.Escape(If(_settings.CargosWebLoginUsernameField, String.Empty))
+            Dim passwordField As String = Regex.Escape(If(_settings.CargosWebLoginPasswordField, String.Empty))
+
+            If Not String.IsNullOrWhiteSpace(usernameField) AndAlso
+               Regex.IsMatch(html, String.Format("name=""{0}""", usernameField), RegexOptions.IgnoreCase) AndAlso
+               Regex.IsMatch(html, String.Format("name=""{0}""", passwordField), RegexOptions.IgnoreCase) Then
+                Return True
+            End If
+
+            Return html.IndexOf("type=""password""", StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
+                   html.IndexOf("login", StringComparison.OrdinalIgnoreCase) >= 0
+        End Function
+
+        Private Shared Function ExtractFormFields(html As String) As Dictionary(Of String, String)
+            Dim result As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+            If String.IsNullOrWhiteSpace(html) Then
+                Return result
+            End If
+
+            For Each tagMatch As Match In Regex.Matches(html, "<input\b[^>]*>", RegexOptions.IgnoreCase)
+                Dim tag As String = tagMatch.Value
+                Dim name As String = ExtractAttribute(tag, "name")
+                If String.IsNullOrWhiteSpace(name) Then
+                    Continue For
+                End If
+
+                Dim value As String = ExtractAttribute(tag, "value")
+                result(name) = value
+            Next
+
+            Return result
+        End Function
+
+        Private Shared Function ExtractAttribute(tag As String, attributeName As String) As String
+            If String.IsNullOrWhiteSpace(tag) OrElse String.IsNullOrWhiteSpace(attributeName) Then
+                Return String.Empty
+            End If
+
+            Dim match As Match = Regex.Match(tag, String.Format("{0}=""([^""]*)""", Regex.Escape(attributeName)), RegexOptions.IgnoreCase)
+            If match.Success Then
+                Return WebUtility.HtmlDecode(match.Groups(1).Value)
+            End If
+
+            Return String.Empty
+        End Function
+
+        Private Shared Sub UpsertFormField(formData As IDictionary(Of String, String), fieldName As String, fieldValue As String)
+            If formData Is Nothing OrElse String.IsNullOrWhiteSpace(fieldName) Then
+                Return
+            End If
+
+            formData(fieldName) = If(fieldValue, String.Empty)
+        End Sub
+
+        Private Function PromptForOtp() As String
+            Console.Write("Insert CARGOS_WEB OTP code: ")
+            Dim otpCode As String = Console.ReadLine()
+            If String.IsNullOrWhiteSpace(otpCode) Then
+                Throw New InvalidOperationException("OTP code is required to complete CARGOS_WEB login.")
+            End If
+
+            Return otpCode.Trim()
         End Function
 
         Private Shared Function StripHtml(value As String) As String

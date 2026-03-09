@@ -28,7 +28,9 @@ Namespace Infrastructure
         Public Property CargosSyncTablesOnStartup As Boolean
         Public Property CargosFailStartupIfTableSyncFails As Boolean
         Public Property CargosWebBaseUrl As String
+        Public Property CargosWebLoginPagePath As String
         Public Property CargosWebLoginPath As String
+        Public Property CargosWebLoginOtpPath As String
         Public Property CargosWebAgencyCreatePath As String
         Public Property CargosWebUsername As String
         Public Property CargosWebPassword As String
@@ -36,6 +38,8 @@ Namespace Infrastructure
         Public Property CargosWebVerifyTokenField As String
         Public Property CargosWebLoginUsernameField As String
         Public Property CargosWebLoginPasswordField As String
+        Public Property CargosWebLoginAccediField As String
+        Public Property CargosWebOtpCodeField As String
         Public Property CargosWebSyncAgenciesOnStartup As Boolean
         Public Property CargosWebFailStartupIfAgencySyncFails As Boolean
         Public Property EmailSmtpHost As String
@@ -86,14 +90,18 @@ Namespace Infrastructure
             settings.CargosSyncTablesOnStartup = GetBoolSetting("Cargos.SyncTablesOnStartup", False)
             settings.CargosFailStartupIfTableSyncFails = GetBoolSetting("Cargos.FailStartupIfTableSyncFails", True)
             settings.CargosWebBaseUrl = GetSetting("CargosWeb.BaseUrl", "https://cargos.poliziadistato.it/CARGOS_WEB")
-            settings.CargosWebLoginPath = GetSetting("CargosWeb.LoginPath", "/Login/Login")
+            settings.CargosWebLoginPagePath = GetSetting("CargosWeb.LoginPagePath", "/Login/Login")
+            settings.CargosWebLoginPath = GetSetting("CargosWeb.LoginPath", "/Login/Default")
+            settings.CargosWebLoginOtpPath = GetSetting("CargosWeb.LoginOtpPath", "/Login/LoginAuth")
             settings.CargosWebAgencyCreatePath = GetSetting("CargosWeb.AgencyCreatePath", "/Agenzia/Create")
             settings.CargosWebUsername = GetSetting("CargosWeb.Username", settings.CargosUsername)
             settings.CargosWebPassword = GetSetting("CargosWeb.Password", settings.CargosPassword)
             settings.CargosWebAuthCookieHeader = GetSetting("CargosWeb.AuthCookieHeader", String.Empty)
             settings.CargosWebVerifyTokenField = GetSetting("CargosWeb.VerifyTokenField", "__RequestVerificationToken")
-            settings.CargosWebLoginUsernameField = GetSetting("CargosWeb.LoginUsernameField", "Username")
-            settings.CargosWebLoginPasswordField = GetSetting("CargosWeb.LoginPasswordField", "Password")
+            settings.CargosWebLoginUsernameField = GetSetting("CargosWeb.LoginUsernameField", "Account.UTENTE")
+            settings.CargosWebLoginPasswordField = GetSetting("CargosWeb.LoginPasswordField", "Account.PASSWORD")
+            settings.CargosWebLoginAccediField = GetSetting("CargosWeb.LoginAccediField", "Accedi")
+            settings.CargosWebOtpCodeField = GetSetting("CargosWeb.OtpCodeField", "codiceVerifica")
             settings.CargosWebSyncAgenciesOnStartup = GetBoolSetting("CargosWeb.SyncAgenciesOnStartup", False)
             settings.CargosWebFailStartupIfAgencySyncFails = GetBoolSetting("CargosWeb.FailStartupIfAgencySyncFails", True)
             settings.EmailSmtpHost = GetSetting("Email.SmtpHost", String.Empty)

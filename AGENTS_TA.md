@@ -42,6 +42,9 @@ The FA requirements remain unchanged. Technical adaptation:
 - Prefer DB-driven sync/enqueue: app calls SQL procedure `Cargos_Sync_Contratti_Frontiera` at run start.
 - The host performs one processor cycle, sleeps for a short interval, and stops at configured cutoff time.
 - Optional startup step: sync local CaRGOS reference tables from `api/Tabella` before entering the loop.
+- Agency bootstrap on `CARGOS_WEB` uses the observed two-step login flow:
+  - credentials POST to `Login/Default`
+  - interactive OTP POST to `Login/LoginAuth`
 - SQL Agent can execute the same procedure independently only as optional operational fallback.
 - Optional evolution path: keep code host-agnostic so it can later move to Windows Service/Worker with minimal refactor.
 
@@ -180,6 +183,16 @@ Core fields:
 - `Cargos_Tabella_Righe`
   - generic cached rows for each coding table
   - stores `TableId`, `RowNumber`, `Code`, `Description`, extra columns, and raw line
+- Runtime parsing rule for `api/Tabella`:
+  - HTTP response body is a JSON envelope, not the final text file
+  - decode `file` from Base64 UTF-8 first
+  - only after decode, split rows by line and columns by `#`
+  - `Code` in `Cargos_Tabella_Righe` must come from decoded column `ID`/`CODICE`
+- Current table-id mapping in runtime and SQL metadata:
+  - `0 = TIPO_PAGAMENTO`
+  - `1 = LUOGHI` (API file currently returned as `V_COMUNI_STATI`)
+  - `2 = TIPO_VEICOLO`
+  - `3 = TIPO_DOCUMENTO`
 
 ### Lookup service
 - Add app lookup service on top of `Cargos_Tabella_Righe`.
@@ -456,7 +469,9 @@ Required keys:
 - `Cargos.SyncTablesOnStartup`
 - `Cargos.FailStartupIfTableSyncFails`
 - `CargosWeb.BaseUrl`
+- `CargosWeb.LoginPagePath`
 - `CargosWeb.LoginPath`
+- `CargosWeb.LoginOtpPath`
 - `CargosWeb.AgencyCreatePath`
 - `CargosWeb.Username`
 - `CargosWeb.Password`
@@ -464,6 +479,8 @@ Required keys:
 - `CargosWeb.VerifyTokenField`
 - `CargosWeb.LoginUsernameField`
 - `CargosWeb.LoginPasswordField`
+- `CargosWeb.LoginAccediField`
+- `CargosWeb.OtpCodeField`
 - `CargosWeb.SyncAgenciesOnStartup`
 - `CargosWeb.FailStartupIfAgencySyncFails`
 - `Email.SmtpHost`
@@ -722,9 +739,11 @@ Notes:
 - [x] Added long-running outer host loop with single-instance mutex and cutoff-hour stop.
 - [x] Added self-test mode for record generation, validation, and crypto smoke checks.
 - [x] Added startup sync service and SQL cache tables for `api/Tabella` reference data.
+- [x] Corrected `api/Tabella` parsing to decode the JSON/Base64 envelope and aligned runtime table IDs to `0/1/2/3`.
 - [x] Added `Cargos.SyncTablesOnStartup` and `Cargos.FailStartupIfTableSyncFails` startup controls.
 - [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
 - [x] Added agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
+- [x] Updated web-agency bootstrap auth to support `Login/Default` plus interactive OTP on `Login/LoginAuth`.
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` settings for web auth and startup agency load.
 - [x] Added structured agency luogo resolution using `AgenziaCity`, `AgenziaCounty`, and `AgenziaPostCode`.

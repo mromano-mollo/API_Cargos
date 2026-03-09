@@ -155,6 +155,17 @@ For `Check` and `Send`, the body is:
 
 ### TR-11 - Reference table sync on startup
 - CaRGOS coded fields that depend on Polizia internal tables must be resolved from local cache tables populated through `api/Tabella`.
+- `api/Tabella` does not return the plain `#`-separated file directly; it returns a JSON envelope with:
+  - `esito`
+  - `errore`
+  - `filename`
+  - `file` (Base64-encoded UTF-8 content to decode before parsing)
+- Header skipping logic must run only on the decoded file content, not on the raw JSON response body.
+- Current table-id mapping used by the app:
+  - `0 = TIPO_PAGAMENTO`
+  - `1 = LUOGHI` (API file currently returned as `V_COMUNI_STATI`)
+  - `2 = TIPO_VEICOLO`
+  - `3 = TIPO_DOCUMENTO`
 - Add startup setting `Cargos.SyncTablesOnStartup`:
   - if `true`, sync local reference tables once before entering the processing loop;
   - if `false`, use the already cached local tables.
@@ -164,6 +175,10 @@ For `Check` and `Send`, the body is:
 
 ### TR-12 - Agency initial load through CARGOS_WEB
 - Initial agency load is handled through `CARGOS_WEB/Agenzia/Create`, not through the public `CARGOS_API`.
+- Current observed web login flow is two-step:
+  1) POST credentials to `CARGOS_WEB/Login/Default`
+  2) user enters OTP and POSTs to `CARGOS_WEB/Login/LoginAuth`
+- OTP is interactive and must be provided by the operator at runtime unless a valid pre-authenticated cookie is supplied.
 - Add startup setting `CargosWeb.SyncAgenciesOnStartup`:
   - if `true`, sync agency source rows and attempt bootstrap on CaRGOS before entering the contract loop;
   - if `false`, skip agency bootstrap.
@@ -452,7 +467,9 @@ Store in `App.config` (`<connectionStrings>` + `<appSettings>`) + environment ov
 - `Cargos.SyncTablesOnStartup` (bool): if `true`, sync `api/Tabella` caches once before entering the main loop.
 - `Cargos.FailStartupIfTableSyncFails` (bool): if `true`, abort startup when reference table sync fails.
 - `CargosWeb.BaseUrl`: base URL of the authenticated CaRGOS web portal.
-- `CargosWeb.LoginPath`: relative path of the web login endpoint/page.
+- `CargosWeb.LoginPagePath`: relative path of the login page used to fetch anti-forgery token and hidden fields.
+- `CargosWeb.LoginPath`: relative path of the credentials POST endpoint.
+- `CargosWeb.LoginOtpPath`: relative path of the OTP confirmation POST endpoint.
 - `CargosWeb.AgencyCreatePath`: relative path of the agency create endpoint/page.
 - `CargosWeb.Username`: web-portal username used for login when cookie header is not supplied.
 - `CargosWeb.Password`: web-portal password used for login when cookie header is not supplied.
@@ -460,6 +477,8 @@ Store in `App.config` (`<connectionStrings>` + `<appSettings>`) + environment ov
 - `CargosWeb.VerifyTokenField`: anti-forgery field name expected by the web portal.
 - `CargosWeb.LoginUsernameField`: form field name used for web login username.
 - `CargosWeb.LoginPasswordField`: form field name used for web login password.
+- `CargosWeb.LoginAccediField`: submit field name used by the login/OTP form.
+- `CargosWeb.OtpCodeField`: field name containing the OTP code in the second login step.
 - `CargosWeb.SyncAgenciesOnStartup` (bool): if `true`, run the initial agency bootstrap before contract processing.
 - `CargosWeb.FailStartupIfAgencySyncFails` (bool): if `true`, abort startup when agency bootstrap fails.
 - `Email.SmtpHost`: SMTP server host used for notifications.
@@ -558,8 +577,10 @@ Add correlation id per batch to link logs.
 - [x] Added queue claim/reservation model to avoid overlapping processing of the same outbox row.
 - [x] Added self-test execution mode for validation, record-builder, and crypto smoke checks.
 - [x] Added startup sync service and SQL cache tables for `api/Tabella` reference data.
+- [x] Corrected `api/Tabella` runtime handling to parse JSON envelope + Base64 `file` payload before reading `#`-separated rows.
 - [x] Added lookup service on top of `Cargos_Tabella_Righe` to resolve business values to CaRGOS codes.
 - [x] Added startup agency bootstrap pipeline for `CARGOS_WEB/Agenzia/Create`.
+- [x] Updated agency bootstrap auth flow to handle `Login/Default` + interactive OTP on `Login/LoginAuth`.
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` startup/auth settings for agency bootstrap.
 - [x] Added structured agency luogo handling (`AgenziaCity`, `AgenziaCounty`, `AgenziaPostCode`) for `AGENZIA_LUOGO_COD` resolution.

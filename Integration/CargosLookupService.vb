@@ -14,10 +14,10 @@ Namespace Integration
     Public NotInheritable Class CargosLookupService
         Implements ICargosLookupService
 
-        Private Const LuoghiTableId As Integer = 2
-        Private Const TipoVeicoloTableId As Integer = 9
-        Private Const TipoDocumentoTableId As Integer = 10
-        Private Const TipoPagamentoTableId As Integer = 11
+        Private Const TipoPagamentoTableId As Integer = 0
+        Private Const LuoghiTableId As Integer = 1
+        Private Const TipoVeicoloTableId As Integer = 2
+        Private Const TipoDocumentoTableId As Integer = 3
 
         Private ReadOnly _repository As ICargosReferenceTableRepository
         Private ReadOnly _cache As New Dictionary(Of Integer, IList(Of CargosReferenceTableRow))()
