@@ -6,7 +6,9 @@ CREATE OR ALTER VIEW [dbo].[Cargos_Vista_Contratti]
 
 AS
 
-SELECT CONCAT(HCTR.[Contract No_], '-', LCTR.[Line No_]) AS CONTRATTO_ID,
+SELECT HCTR.[Contract No_] AS ContractNo,
+       LCTR.[Line No_] AS ContractLineNo,
+       CONCAT(HCTR.[Contract No_], '-', LCTR.[Line No_]) AS CONTRATTO_ID,
 	     HCTR.[Starting Date] AS CONTRATTO_DATA,
 	     CASE
 		    WHEN dbo.GetMetodoPagamento(HCTR.[Payment Method Code]) LIKE '%Credito%' THEN '0'
@@ -72,3 +74,6 @@ SELECT CONCAT(HCTR.[Contract No_], '-', LCTR.[Line No_]) AS CONTRATTO_ID,
    AND LCTR.Type = 6
    AND LCTR.[Entry Status] = 2
    AND Obj.[CargosInfo] = 1;
+
+
+   --AGGIUNGERE GESTIONE TALE PER LA QUALE SE IL CONTRATTO NON E' ANCORA CHIUSO E DATA FINE NOLO E' MINORE DI DATA ODIERNA, MANDIAMO A CARGOS AGGIORNAMENTO CON NUOVA DATA FINE NOLO AGGIORNATA AD OGGI (COSI PER TUTTI I GIORNI A VENIRE)
