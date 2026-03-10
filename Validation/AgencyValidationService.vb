@@ -21,11 +21,11 @@ Namespace Validation
             RequireString(result, "Agenzia.AGENZIA_INDIRIZZO", item.AgenziaIndirizzo)
             RequireString(result, "Agenzia.AGENZIA_RECAPITO_TEL", item.AgenziaRecapitoTel)
 
-            ValidateLength(result, "Agenzia.AGENZIA_ID", item.AgenziaId, 9)
-            ValidateLength(result, "Agenzia.AGENZIA_NOME", item.AgenziaNome, 38)
+            ValidateLength(result, "Agenzia.AGENZIA_ID", item.AgenziaId, 30)
+            ValidateLength(result, "Agenzia.AGENZIA_NOME", item.AgenziaNome, 70)
             ValidateLength(result, "Agenzia.AGENZIA_LUOGO_COD", item.AgenziaLuogoCod, 9)
-            ValidateLength(result, "Agenzia.AGENZIA_INDIRIZZO", item.AgenziaIndirizzo, 80)
-            ValidateLength(result, "Agenzia.AGENZIA_RECAPITO_TEL", item.AgenziaRecapitoTel, 15)
+            ValidateLength(result, "Agenzia.AGENZIA_INDIRIZZO", item.AgenziaIndirizzo, 150)
+            ValidateLength(result, "Agenzia.AGENZIA_RECAPITO_TEL", item.AgenziaRecapitoTel, 20)
 
             Return result
         End Function

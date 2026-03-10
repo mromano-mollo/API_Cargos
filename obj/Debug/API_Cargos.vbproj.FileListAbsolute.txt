@@ -41,3 +41,7 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_cookie_reset_fix
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_cookie_reset_fix\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_cookie_reset_fix\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_cookie_reset_fix\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_recordlayout_fix\API_Cargos.exe.config
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_recordlayout_fix\API_Cargos.exe
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_recordlayout_fix\API_Cargos.pdb
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_recordlayout_fix\API_Cargos.xml

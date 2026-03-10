@@ -260,6 +260,7 @@ Naming convention: every new CARGOS table must start with `Cargos_` prefix.
 ### Agency bootstrap tables
 - `Cargos_Agenzie`
   - stores one current snapshot row per branch/agency source record
+  - internal storage keeps `AgenziaId` at `NVARCHAR(50)` and `AgenziaLuogoValue` at `NVARCHAR(9)`
 - `Cargos_Agenzie_Frontiera`
   - stores startup agency bootstrap queue and outcomes for `CARGOS_WEB/Agenzia/Create`
 
@@ -351,6 +352,9 @@ Fields:
 - Each field is written into its specified position range `DAL..AL` (1-based positions from CaRGOS docs).
 - Fill default with spaces.
 - Apply truncation if input exceeds field length.
+- Current implementation follows the official `TRACCIATO RECORD` dimension set from the CaRGOS API manual.
+- The current official optional tail includes `VEICOLO_COLORE`, `VEICOLO_GPS`, `VEICOLO_BLOCCOM`, and `CONDUCENTE2_*` fields.
+- Fields not supplied by our source model are still written as blanks, but their official positions and lengths are reserved in the 1505-char line.
 - Apply padding rules:
   - If docs do not specify numeric left-padding, default to right-pad spaces for strings.
   - Use CaRGOS `Check` endpoint to confirm formatting; adjust padding if required.
@@ -588,6 +592,9 @@ Add correlation id per batch to link logs.
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` startup/auth settings for agency bootstrap.
 - [x] Added structured agency luogo handling (`AgenziaCity`, `AgenziaCounty`, `AgenziaPostCode`) for `AGENZIA_LUOGO_COD` resolution.
+- [x] Realigned `RecordBuilder` to the current official CaRGOS field dimensions (1505 total, current `TRACCIATO RECORD` layout).
+- [x] Enlarged undersized SQL/app agency fields to avoid truncation before web/API submission (`AgenziaId` internal 50; API validation still 30; name/address/tel aligned to official sizes).
+- [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns so rerunning `Cargos_Setup.sql` applies length upgrades correctly.
 
 ---
 

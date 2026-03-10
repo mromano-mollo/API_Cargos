@@ -58,31 +58,31 @@ BEGIN
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
-        ContrattoId NVARCHAR(10) NULL,
+        ContrattoId NVARCHAR(50) NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) NULL,
         ContrattoCheckoutData DATETIME2(0) NULL,
         ContrattoCheckoutLuogoCod NVARCHAR(9) NULL,
-        ContrattoCheckoutIndirizzo NVARCHAR(80) NULL,
+        ContrattoCheckoutIndirizzo NVARCHAR(150) NULL,
         ContrattoCheckinData DATETIME2(0) NULL,
         ContrattoCheckinLuogoCod NVARCHAR(9) NULL,
-        ContrattoCheckinIndirizzo NVARCHAR(80) NULL,
-        OperatoreId NVARCHAR(9) NULL,
-        AgenziaId NVARCHAR(9) NULL,
-        AgenziaNome NVARCHAR(38) NULL,
+        ContrattoCheckinIndirizzo NVARCHAR(150) NULL,
+        OperatoreId NVARCHAR(50) NULL,
+        AgenziaId NVARCHAR(30) NULL,
+        AgenziaNome NVARCHAR(70) NULL,
         AgenziaLuogoCod NVARCHAR(9) NULL,
-        AgenziaIndirizzo NVARCHAR(80) NULL,
-        AgenziaRecapitoTel NVARCHAR(15) NULL,
+        AgenziaIndirizzo NVARCHAR(150) NULL,
+        AgenziaRecapitoTel NVARCHAR(20) NULL,
         VeicoloTipo NVARCHAR(2) NULL,
-        VeicoloMarca NVARCHAR(20) NULL,
-        VeicoloModello NVARCHAR(20) NULL,
-        VeicoloTarga NVARCHAR(10) NULL,
-        ConducenteContraenteCognome NVARCHAR(38) NULL,
+        VeicoloMarca NVARCHAR(50) NULL,
+        VeicoloModello NVARCHAR(100) NULL,
+        VeicoloTarga NVARCHAR(15) NULL,
+        ConducenteContraenteCognome NVARCHAR(50) NULL,
         ConducenteContraenteNome NVARCHAR(38) NULL,
         ConducenteContraenteNascitaData DATETIME2(0) NULL,
         ConducenteContraenteNascitaLuogoCod NVARCHAR(9) NULL,
-        ConducenteContraenteCittadinanzaCod NVARCHAR(3) NULL,
-        ConducenteContraenteDocideTipoCod NVARCHAR(2) NULL,
+        ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL,
+        ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL,
         ConducenteContraenteDocideNumero NVARCHAR(20) NULL,
         ConducenteContraenteDocideLuogorilCod NVARCHAR(9) NULL,
         ConducenteContraentePatenteNumero NVARCHAR(20) NULL,
@@ -110,14 +110,14 @@ BEGIN
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Agenzie PRIMARY KEY,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
-        AgenziaId NVARCHAR(9) NOT NULL,
-        AgenziaNome NVARCHAR(38) NOT NULL,
-        AgenziaLuogoValue NVARCHAR(255) NOT NULL,
+        AgenziaId NVARCHAR(50) NOT NULL,
+        AgenziaNome NVARCHAR(70) NOT NULL,
+        AgenziaLuogoValue NVARCHAR(9) NOT NULL,
         AgenziaCity NVARCHAR(100) NULL,
         AgenziaCounty NVARCHAR(10) NULL,
         AgenziaPostCode NVARCHAR(20) NULL,
-        AgenziaIndirizzo NVARCHAR(80) NOT NULL,
-        AgenziaRecapitoTel NVARCHAR(15) NOT NULL,
+        AgenziaIndirizzo NVARCHAR(150) NOT NULL,
+        AgenziaRecapitoTel NVARCHAR(20) NOT NULL,
         PayloadFingerprint NVARCHAR(128) NOT NULL,
         LastQueuedFingerprint NVARCHAR(128) NULL,
         LastQueuedAt DATETIME2 NULL,
@@ -138,15 +138,15 @@ BEGIN
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Agenzie_Frontiera PRIMARY KEY,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
-        AgenziaId NVARCHAR(9) NOT NULL,
-        AgenziaNome NVARCHAR(38) NOT NULL,
-        AgenziaLuogoValue NVARCHAR(255) NOT NULL,
+        AgenziaId NVARCHAR(50) NOT NULL,
+        AgenziaNome NVARCHAR(70) NOT NULL,
+        AgenziaLuogoValue NVARCHAR(9) NOT NULL,
         AgenziaCity NVARCHAR(100) NULL,
         AgenziaCounty NVARCHAR(10) NULL,
         AgenziaPostCode NVARCHAR(20) NULL,
         AgenziaLuogoCod NVARCHAR(9) NULL,
-        AgenziaIndirizzo NVARCHAR(80) NOT NULL,
-        AgenziaRecapitoTel NVARCHAR(15) NOT NULL,
+        AgenziaIndirizzo NVARCHAR(150) NOT NULL,
+        AgenziaRecapitoTel NVARCHAR(20) NOT NULL,
         Reason NVARCHAR(30) NOT NULL,
         SnapshotHash NVARCHAR(128) NOT NULL,
         Status NVARCHAR(30) NOT NULL,
@@ -169,11 +169,20 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'BranchEmail') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie ADD BranchEmail NVARCHAR(255) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaId') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaId NVARCHAR(9) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaId DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaId NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaId DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaId') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaId') <> 100
+        ALTER TABLE dbo.Cargos_Agenzie ALTER COLUMN AgenziaId NVARCHAR(50) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaNome') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaNome NVARCHAR(38) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaNome DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaNome NVARCHAR(70) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaNome DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaNome') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaNome') < 140
+        ALTER TABLE dbo.Cargos_Agenzie ALTER COLUMN AgenziaNome NVARCHAR(70) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaLuogoValue') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaLuogoValue NVARCHAR(255) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaLuogoValue DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaLuogoValue NVARCHAR(9) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaLuogoValue DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaLuogoValue') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaLuogoValue') <> 18
+        ALTER TABLE dbo.Cargos_Agenzie ALTER COLUMN AgenziaLuogoValue NVARCHAR(9) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaCity') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaCity NVARCHAR(100) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaCounty') IS NULL
@@ -181,9 +190,15 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaPostCode') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaPostCode NVARCHAR(20) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaIndirizzo') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaIndirizzo NVARCHAR(80) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaIndirizzo DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaIndirizzo NVARCHAR(150) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaIndirizzo DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaIndirizzo') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Agenzie ALTER COLUMN AgenziaIndirizzo NVARCHAR(150) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaRecapitoTel') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaRecapitoTel NVARCHAR(15) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaRecapitoTel DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie ADD AgenziaRecapitoTel NVARCHAR(20) NOT NULL CONSTRAINT DF_Cargos_Agenzie_AgenziaRecapitoTel DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaRecapitoTel') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie', N'AgenziaRecapitoTel') < 40
+        ALTER TABLE dbo.Cargos_Agenzie ALTER COLUMN AgenziaRecapitoTel NVARCHAR(20) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'PayloadFingerprint') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie ADD PayloadFingerprint NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Agenzie_PayloadFingerprint DEFAULT (N'');
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'LastQueuedFingerprint') IS NULL
@@ -216,11 +231,20 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'BranchEmail') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD BranchEmail NVARCHAR(255) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaId') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaId NVARCHAR(9) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaId DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaId NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaId DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaId') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaId') <> 100
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ALTER COLUMN AgenziaId NVARCHAR(50) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaNome') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaNome NVARCHAR(38) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaNome DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaNome NVARCHAR(70) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaNome DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaNome') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaNome') < 140
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ALTER COLUMN AgenziaNome NVARCHAR(70) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaLuogoValue') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaLuogoValue NVARCHAR(255) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaLuogoValue DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaLuogoValue NVARCHAR(9) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaLuogoValue DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaLuogoValue') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaLuogoValue') <> 18
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ALTER COLUMN AgenziaLuogoValue NVARCHAR(9) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaCity') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaCity NVARCHAR(100) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaCounty') IS NULL
@@ -230,9 +254,15 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaLuogoCod') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaLuogoCod NVARCHAR(9) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaIndirizzo') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaIndirizzo NVARCHAR(80) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaIndirizzo DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaIndirizzo NVARCHAR(150) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaIndirizzo DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaIndirizzo') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ALTER COLUMN AgenziaIndirizzo NVARCHAR(150) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaRecapitoTel') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaRecapitoTel NVARCHAR(15) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaRecapitoTel DEFAULT (N'');
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD AgenziaRecapitoTel NVARCHAR(20) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_AgenziaRecapitoTel DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaRecapitoTel') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'AgenziaRecapitoTel') < 40
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ALTER COLUMN AgenziaRecapitoTel NVARCHAR(20) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'Reason') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD Reason NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_Reason DEFAULT (N'INITIAL_LOAD');
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'SnapshotHash') IS NULL
@@ -313,25 +343,25 @@ BEGIN
         SET @BranchEmailExpression = N'CAST(v.BranchEmail AS NVARCHAR(255))';
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaId') IS NOT NULL
-        SET @AgenziaIdExpression = N'CAST(v.AgenziaId AS NVARCHAR(9))';
+        SET @AgenziaIdExpression = N'CAST(v.AgenziaId AS NVARCHAR(50))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AGENZIA_ID') IS NOT NULL
-        SET @AgenziaIdExpression = N'CAST(v.AGENZIA_ID AS NVARCHAR(9))';
+        SET @AgenziaIdExpression = N'CAST(v.AGENZIA_ID AS NVARCHAR(50))';
     ELSE
         THROW 50103, 'View dbo.Cargos_Vista_Agenzie must expose AgenziaId or AGENZIA_ID.', 1;
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaNome') IS NOT NULL
-        SET @AgenziaNomeExpression = N'CAST(v.AgenziaNome AS NVARCHAR(38))';
+        SET @AgenziaNomeExpression = N'CAST(v.AgenziaNome AS NVARCHAR(70))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AGENZIA_NOME') IS NOT NULL
-        SET @AgenziaNomeExpression = N'CAST(v.AGENZIA_NOME AS NVARCHAR(38))';
+        SET @AgenziaNomeExpression = N'CAST(v.AGENZIA_NOME AS NVARCHAR(70))';
     ELSE
         THROW 50104, 'View dbo.Cargos_Vista_Agenzie must expose AgenziaNome or AGENZIA_NOME.', 1;
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaLuogoValue') IS NOT NULL
-        SET @AgenziaLuogoValueExpression = N'CAST(v.AgenziaLuogoValue AS NVARCHAR(255))';
+        SET @AgenziaLuogoValueExpression = N'CAST(v.AgenziaLuogoValue AS NVARCHAR(9))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaLuogoCod') IS NOT NULL
-        SET @AgenziaLuogoValueExpression = N'CAST(v.AgenziaLuogoCod AS NVARCHAR(255))';
+        SET @AgenziaLuogoValueExpression = N'CAST(v.AgenziaLuogoCod AS NVARCHAR(9))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AGENZIA_LUOGO_COD') IS NOT NULL
-        SET @AgenziaLuogoValueExpression = N'CAST(v.AGENZIA_LUOGO_COD AS NVARCHAR(255))';
+        SET @AgenziaLuogoValueExpression = N'CAST(v.AGENZIA_LUOGO_COD AS NVARCHAR(9))';
     ELSE
         THROW 50105, 'View dbo.Cargos_Vista_Agenzie must expose AgenziaLuogoValue/AgenziaLuogoCod or AGENZIA_LUOGO_COD.', 1;
 
@@ -345,16 +375,16 @@ BEGIN
         SET @AgenziaPostCodeExpression = N'CAST(v.AgenziaPostCode AS NVARCHAR(20))';
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaIndirizzo') IS NOT NULL
-        SET @AgenziaIndirizzoExpression = N'CAST(v.AgenziaIndirizzo AS NVARCHAR(80))';
+        SET @AgenziaIndirizzoExpression = N'CAST(v.AgenziaIndirizzo AS NVARCHAR(150))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AGENZIA_INDIRIZZO') IS NOT NULL
-        SET @AgenziaIndirizzoExpression = N'CAST(v.AGENZIA_INDIRIZZO AS NVARCHAR(80))';
+        SET @AgenziaIndirizzoExpression = N'CAST(v.AGENZIA_INDIRIZZO AS NVARCHAR(150))';
     ELSE
         THROW 50106, 'View dbo.Cargos_Vista_Agenzie must expose AgenziaIndirizzo or AGENZIA_INDIRIZZO.', 1;
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AgenziaRecapitoTel') IS NOT NULL
-        SET @AgenziaRecapitoTelExpression = N'CAST(v.AgenziaRecapitoTel AS NVARCHAR(15))';
+        SET @AgenziaRecapitoTelExpression = N'CAST(v.AgenziaRecapitoTel AS NVARCHAR(20))';
     ELSE IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'AGENZIA_RECAPITO_TEL') IS NOT NULL
-        SET @AgenziaRecapitoTelExpression = N'CAST(v.AGENZIA_RECAPITO_TEL AS NVARCHAR(15))';
+        SET @AgenziaRecapitoTelExpression = N'CAST(v.AGENZIA_RECAPITO_TEL AS NVARCHAR(20))';
     ELSE
         THROW 50107, 'View dbo.Cargos_Vista_Agenzie must expose AgenziaRecapitoTel or AGENZIA_RECAPITO_TEL.', 1;
 
@@ -371,14 +401,14 @@ BEGIN
     (
         BranchId NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
         BranchEmail NVARCHAR(255) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaId NVARCHAR(9) COLLATE DATABASE_DEFAULT NOT NULL,
-        AgenziaNome NVARCHAR(38) COLLATE DATABASE_DEFAULT NOT NULL,
-        AgenziaLuogoValue NVARCHAR(255) COLLATE DATABASE_DEFAULT NOT NULL,
+        AgenziaId NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
+        AgenziaNome NVARCHAR(70) COLLATE DATABASE_DEFAULT NOT NULL,
+        AgenziaLuogoValue NVARCHAR(9) COLLATE DATABASE_DEFAULT NOT NULL,
         AgenziaCity NVARCHAR(100) COLLATE DATABASE_DEFAULT NULL,
         AgenziaCounty NVARCHAR(10) COLLATE DATABASE_DEFAULT NULL,
         AgenziaPostCode NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaIndirizzo NVARCHAR(80) COLLATE DATABASE_DEFAULT NOT NULL,
-        AgenziaRecapitoTel NVARCHAR(15) COLLATE DATABASE_DEFAULT NOT NULL,
+        AgenziaIndirizzo NVARCHAR(150) COLLATE DATABASE_DEFAULT NOT NULL,
+        AgenziaRecapitoTel NVARCHAR(20) COLLATE DATABASE_DEFAULT NOT NULL,
         PayloadFingerprint NVARCHAR(128) COLLATE DATABASE_DEFAULT NULL,
         SnapshotHash NVARCHAR(128) COLLATE DATABASE_DEFAULT NULL,
         QueueReason NVARCHAR(30) COLLATE DATABASE_DEFAULT NULL
@@ -528,31 +558,31 @@ BEGIN
         CargosContractId NVARCHAR(50) NOT NULL,
         BranchId NVARCHAR(50) NOT NULL,
         BranchEmail NVARCHAR(255) NULL,
-        ContrattoId NVARCHAR(10) NULL,
+        ContrattoId NVARCHAR(50) NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) NULL,
         ContrattoCheckoutData DATETIME2(0) NULL,
         ContrattoCheckoutLuogoCod NVARCHAR(9) NULL,
-        ContrattoCheckoutIndirizzo NVARCHAR(80) NULL,
+        ContrattoCheckoutIndirizzo NVARCHAR(150) NULL,
         ContrattoCheckinData DATETIME2(0) NULL,
         ContrattoCheckinLuogoCod NVARCHAR(9) NULL,
-        ContrattoCheckinIndirizzo NVARCHAR(80) NULL,
-        OperatoreId NVARCHAR(9) NULL,
-        AgenziaId NVARCHAR(9) NULL,
-        AgenziaNome NVARCHAR(38) NULL,
+        ContrattoCheckinIndirizzo NVARCHAR(150) NULL,
+        OperatoreId NVARCHAR(50) NULL,
+        AgenziaId NVARCHAR(30) NULL,
+        AgenziaNome NVARCHAR(70) NULL,
         AgenziaLuogoCod NVARCHAR(9) NULL,
-        AgenziaIndirizzo NVARCHAR(80) NULL,
-        AgenziaRecapitoTel NVARCHAR(15) NULL,
+        AgenziaIndirizzo NVARCHAR(150) NULL,
+        AgenziaRecapitoTel NVARCHAR(20) NULL,
         VeicoloTipo NVARCHAR(2) NULL,
-        VeicoloMarca NVARCHAR(20) NULL,
-        VeicoloModello NVARCHAR(20) NULL,
-        VeicoloTarga NVARCHAR(10) NULL,
-        ConducenteContraenteCognome NVARCHAR(38) NULL,
+        VeicoloMarca NVARCHAR(50) NULL,
+        VeicoloModello NVARCHAR(100) NULL,
+        VeicoloTarga NVARCHAR(15) NULL,
+        ConducenteContraenteCognome NVARCHAR(50) NULL,
         ConducenteContraenteNome NVARCHAR(38) NULL,
         ConducenteContraenteNascitaData DATETIME2(0) NULL,
         ConducenteContraenteNascitaLuogoCod NVARCHAR(9) NULL,
-        ConducenteContraenteCittadinanzaCod NVARCHAR(3) NULL,
-        ConducenteContraenteDocideTipoCod NVARCHAR(2) NULL,
+        ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL,
+        ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL,
         ConducenteContraenteDocideNumero NVARCHAR(20) NULL,
         ConducenteContraenteDocideLuogorilCod NVARCHAR(9) NULL,
         ConducenteContraentePatenteNumero NVARCHAR(20) NULL,
@@ -641,31 +671,31 @@ BEGIN
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_CargosContractId DEFAULT (N'''')'),
         (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_BranchId DEFAULT (N'''')'),
         (N'BranchEmail', N'NVARCHAR(255) NULL'),
-        (N'ContrattoId', N'NVARCHAR(10) NULL'),
+        (N'ContrattoId', N'NVARCHAR(50) NULL'),
         (N'ContrattoData', N'DATETIME2(0) NULL'),
         (N'ContrattoTipoP', N'NVARCHAR(1) NULL'),
         (N'ContrattoCheckoutData', N'DATETIME2(0) NULL'),
         (N'ContrattoCheckoutLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ContrattoCheckoutIndirizzo', N'NVARCHAR(80) NULL'),
+        (N'ContrattoCheckoutIndirizzo', N'NVARCHAR(150) NULL'),
         (N'ContrattoCheckinData', N'DATETIME2(0) NULL'),
         (N'ContrattoCheckinLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ContrattoCheckinIndirizzo', N'NVARCHAR(80) NULL'),
-        (N'OperatoreId', N'NVARCHAR(9) NULL'),
-        (N'AgenziaId', N'NVARCHAR(9) NULL'),
-        (N'AgenziaNome', N'NVARCHAR(38) NULL'),
+        (N'ContrattoCheckinIndirizzo', N'NVARCHAR(150) NULL'),
+        (N'OperatoreId', N'NVARCHAR(50) NULL'),
+        (N'AgenziaId', N'NVARCHAR(30) NULL'),
+        (N'AgenziaNome', N'NVARCHAR(70) NULL'),
         (N'AgenziaLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'AgenziaIndirizzo', N'NVARCHAR(80) NULL'),
-        (N'AgenziaRecapitoTel', N'NVARCHAR(15) NULL'),
+        (N'AgenziaIndirizzo', N'NVARCHAR(150) NULL'),
+        (N'AgenziaRecapitoTel', N'NVARCHAR(20) NULL'),
         (N'VeicoloTipo', N'NVARCHAR(2) NULL'),
-        (N'VeicoloMarca', N'NVARCHAR(20) NULL'),
-        (N'VeicoloModello', N'NVARCHAR(20) NULL'),
-        (N'VeicoloTarga', N'NVARCHAR(10) NULL'),
-        (N'ConducenteContraenteCognome', N'NVARCHAR(38) NULL'),
+        (N'VeicoloMarca', N'NVARCHAR(50) NULL'),
+        (N'VeicoloModello', N'NVARCHAR(100) NULL'),
+        (N'VeicoloTarga', N'NVARCHAR(15) NULL'),
+        (N'ConducenteContraenteCognome', N'NVARCHAR(50) NULL'),
         (N'ConducenteContraenteNome', N'NVARCHAR(38) NULL'),
         (N'ConducenteContraenteNascitaData', N'DATETIME2(0) NULL'),
         (N'ConducenteContraenteNascitaLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ConducenteContraenteCittadinanzaCod', N'NVARCHAR(3) NULL'),
-        (N'ConducenteContraenteDocideTipoCod', N'NVARCHAR(2) NULL'),
+        (N'ConducenteContraenteCittadinanzaCod', N'NVARCHAR(9) NULL'),
+        (N'ConducenteContraenteDocideTipoCod', N'NVARCHAR(5) NULL'),
         (N'ConducenteContraenteDocideNumero', N'NVARCHAR(20) NULL'),
         (N'ConducenteContraenteDocideLuogorilCod', N'NVARCHAR(9) NULL'),
         (N'ConducenteContraentePatenteNumero', N'NVARCHAR(20) NULL'),
@@ -687,6 +717,35 @@ BEGIN
     FROM @ContrattiColumns c;
 
     EXEC sys.sp_executesql @SqlAddContratti;
+
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContrattoId') < 100
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ContrattoId NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContrattoCheckoutIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ContrattoCheckoutIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContrattoCheckinIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ContrattoCheckinIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'OperatoreId') < 100
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN OperatoreId NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'AgenziaId') < 60
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN AgenziaId NVARCHAR(30) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'AgenziaNome') < 140
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN AgenziaNome NVARCHAR(70) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'AgenziaIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN AgenziaIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'AgenziaRecapitoTel') < 40
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN AgenziaRecapitoTel NVARCHAR(20) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'VeicoloMarca') < 100
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN VeicoloMarca NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'VeicoloModello') < 200
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN VeicoloModello NVARCHAR(100) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'VeicoloTarga') < 30
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN VeicoloTarga NVARCHAR(15) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ConducenteContraenteCognome') < 100
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ConducenteContraenteCognome NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ConducenteContraenteCittadinanzaCod') < 18
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ConducenteContraenteDocideTipoCod') < 10
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL;
 
     IF EXISTS (
         SELECT 1
@@ -728,31 +787,31 @@ BEGIN
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CargosContractId DEFAULT (N'''')'),
         (N'BranchId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_BranchId DEFAULT (N'''')'),
         (N'BranchEmail', N'NVARCHAR(255) NULL'),
-        (N'ContrattoId', N'NVARCHAR(10) NULL'),
+        (N'ContrattoId', N'NVARCHAR(50) NULL'),
         (N'ContrattoData', N'DATETIME2(0) NULL'),
         (N'ContrattoTipoP', N'NVARCHAR(1) NULL'),
         (N'ContrattoCheckoutData', N'DATETIME2(0) NULL'),
         (N'ContrattoCheckoutLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ContrattoCheckoutIndirizzo', N'NVARCHAR(80) NULL'),
+        (N'ContrattoCheckoutIndirizzo', N'NVARCHAR(150) NULL'),
         (N'ContrattoCheckinData', N'DATETIME2(0) NULL'),
         (N'ContrattoCheckinLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ContrattoCheckinIndirizzo', N'NVARCHAR(80) NULL'),
-        (N'OperatoreId', N'NVARCHAR(9) NULL'),
-        (N'AgenziaId', N'NVARCHAR(9) NULL'),
-        (N'AgenziaNome', N'NVARCHAR(38) NULL'),
+        (N'ContrattoCheckinIndirizzo', N'NVARCHAR(150) NULL'),
+        (N'OperatoreId', N'NVARCHAR(50) NULL'),
+        (N'AgenziaId', N'NVARCHAR(30) NULL'),
+        (N'AgenziaNome', N'NVARCHAR(70) NULL'),
         (N'AgenziaLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'AgenziaIndirizzo', N'NVARCHAR(80) NULL'),
-        (N'AgenziaRecapitoTel', N'NVARCHAR(15) NULL'),
+        (N'AgenziaIndirizzo', N'NVARCHAR(150) NULL'),
+        (N'AgenziaRecapitoTel', N'NVARCHAR(20) NULL'),
         (N'VeicoloTipo', N'NVARCHAR(2) NULL'),
-        (N'VeicoloMarca', N'NVARCHAR(20) NULL'),
-        (N'VeicoloModello', N'NVARCHAR(20) NULL'),
-        (N'VeicoloTarga', N'NVARCHAR(10) NULL'),
-        (N'ConducenteContraenteCognome', N'NVARCHAR(38) NULL'),
+        (N'VeicoloMarca', N'NVARCHAR(50) NULL'),
+        (N'VeicoloModello', N'NVARCHAR(100) NULL'),
+        (N'VeicoloTarga', N'NVARCHAR(15) NULL'),
+        (N'ConducenteContraenteCognome', N'NVARCHAR(50) NULL'),
         (N'ConducenteContraenteNome', N'NVARCHAR(38) NULL'),
         (N'ConducenteContraenteNascitaData', N'DATETIME2(0) NULL'),
         (N'ConducenteContraenteNascitaLuogoCod', N'NVARCHAR(9) NULL'),
-        (N'ConducenteContraenteCittadinanzaCod', N'NVARCHAR(3) NULL'),
-        (N'ConducenteContraenteDocideTipoCod', N'NVARCHAR(2) NULL'),
+        (N'ConducenteContraenteCittadinanzaCod', N'NVARCHAR(9) NULL'),
+        (N'ConducenteContraenteDocideTipoCod', N'NVARCHAR(5) NULL'),
         (N'ConducenteContraenteDocideNumero', N'NVARCHAR(20) NULL'),
         (N'ConducenteContraenteDocideLuogorilCod', N'NVARCHAR(9) NULL'),
         (N'ConducenteContraentePatenteNumero', N'NVARCHAR(20) NULL'),
@@ -783,6 +842,35 @@ BEGIN
     FROM @FrontieraColumns c;
 
     EXEC sys.sp_executesql @SqlAddFrontiera;
+
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContrattoId') < 100
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ContrattoId NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContrattoCheckoutIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ContrattoCheckoutIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContrattoCheckinIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ContrattoCheckinIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'OperatoreId') < 100
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN OperatoreId NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'AgenziaId') < 60
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN AgenziaId NVARCHAR(30) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'AgenziaNome') < 140
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN AgenziaNome NVARCHAR(70) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'AgenziaIndirizzo') < 300
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN AgenziaIndirizzo NVARCHAR(150) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'AgenziaRecapitoTel') < 40
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN AgenziaRecapitoTel NVARCHAR(20) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'VeicoloMarca') < 100
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN VeicoloMarca NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'VeicoloModello') < 200
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN VeicoloModello NVARCHAR(100) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'VeicoloTarga') < 30
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN VeicoloTarga NVARCHAR(15) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ConducenteContraenteCognome') < 100
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ConducenteContraenteCognome NVARCHAR(50) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ConducenteContraenteCittadinanzaCod') < 18
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ConducenteContraenteDocideTipoCod') < 10
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL;
 END;
 GO
 
@@ -1037,31 +1125,31 @@ BEGIN
         CargosContractId NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
         BranchId NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
         BranchEmail NVARCHAR(255) COLLATE DATABASE_DEFAULT NULL,
-        ContrattoId NVARCHAR(10) COLLATE DATABASE_DEFAULT NULL,
+        ContrattoId NVARCHAR(50) COLLATE DATABASE_DEFAULT NULL,
         ContrattoData DATETIME2(0) NULL,
         ContrattoTipoP NVARCHAR(1) COLLATE DATABASE_DEFAULT NULL,
         ContrattoCheckoutData DATETIME2(0) NULL,
         ContrattoCheckoutLuogoCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        ContrattoCheckoutIndirizzo NVARCHAR(80) COLLATE DATABASE_DEFAULT NULL,
+        ContrattoCheckoutIndirizzo NVARCHAR(150) COLLATE DATABASE_DEFAULT NULL,
         ContrattoCheckinData DATETIME2(0) NULL,
         ContrattoCheckinLuogoCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        ContrattoCheckinIndirizzo NVARCHAR(80) COLLATE DATABASE_DEFAULT NULL,
-        OperatoreId NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaId NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaNome NVARCHAR(38) COLLATE DATABASE_DEFAULT NULL,
+        ContrattoCheckinIndirizzo NVARCHAR(150) COLLATE DATABASE_DEFAULT NULL,
+        OperatoreId NVARCHAR(50) COLLATE DATABASE_DEFAULT NULL,
+        AgenziaId NVARCHAR(30) COLLATE DATABASE_DEFAULT NULL,
+        AgenziaNome NVARCHAR(70) COLLATE DATABASE_DEFAULT NULL,
         AgenziaLuogoCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaIndirizzo NVARCHAR(80) COLLATE DATABASE_DEFAULT NULL,
-        AgenziaRecapitoTel NVARCHAR(15) COLLATE DATABASE_DEFAULT NULL,
+        AgenziaIndirizzo NVARCHAR(150) COLLATE DATABASE_DEFAULT NULL,
+        AgenziaRecapitoTel NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
         VeicoloTipo NVARCHAR(2) COLLATE DATABASE_DEFAULT NULL,
-        VeicoloMarca NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
-        VeicoloModello NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
-        VeicoloTarga NVARCHAR(10) COLLATE DATABASE_DEFAULT NULL,
-        ConducenteContraenteCognome NVARCHAR(38) COLLATE DATABASE_DEFAULT NULL,
+        VeicoloMarca NVARCHAR(50) COLLATE DATABASE_DEFAULT NULL,
+        VeicoloModello NVARCHAR(100) COLLATE DATABASE_DEFAULT NULL,
+        VeicoloTarga NVARCHAR(15) COLLATE DATABASE_DEFAULT NULL,
+        ConducenteContraenteCognome NVARCHAR(50) COLLATE DATABASE_DEFAULT NULL,
         ConducenteContraenteNome NVARCHAR(38) COLLATE DATABASE_DEFAULT NULL,
         ConducenteContraenteNascitaData DATETIME2(0) NULL,
         ConducenteContraenteNascitaLuogoCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
-        ConducenteContraenteCittadinanzaCod NVARCHAR(3) COLLATE DATABASE_DEFAULT NULL,
-        ConducenteContraenteDocideTipoCod NVARCHAR(2) COLLATE DATABASE_DEFAULT NULL,
+        ConducenteContraenteCittadinanzaCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
+        ConducenteContraenteDocideTipoCod NVARCHAR(5) COLLATE DATABASE_DEFAULT NULL,
         ConducenteContraenteDocideNumero NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
         ConducenteContraenteDocideLuogorilCod NVARCHAR(9) COLLATE DATABASE_DEFAULT NULL,
         ConducenteContraentePatenteNumero NVARCHAR(20) COLLATE DATABASE_DEFAULT NULL,
@@ -1094,31 +1182,31 @@ BEGIN
             CAST(ISNULL(' + @CargosContractIdExpression + N', ' + @ContractNoExpression + N') AS NVARCHAR(50)),
             CAST(v.BranchId AS NVARCHAR(50)),
             ' + @BranchEmailExpression + N',
-            CAST(v.CONTRATTO_ID AS NVARCHAR(10)),
+            CAST(v.CONTRATTO_ID AS NVARCHAR(50)),
             TRY_CAST(v.CONTRATTO_DATA AS DATETIME2(0)),
             CAST(v.CONTRATTO_TIPOP AS NVARCHAR(1)),
             TRY_CAST(v.CONTRATTO_CHECKOUT_DATA AS DATETIME2(0)),
             CAST(v.CONTRATTO_CHECKOUT_LUOGO_COD AS NVARCHAR(9)),
-            CAST(v.CONTRATTO_CHECKOUT_INDIRIZZO AS NVARCHAR(80)),
+            CAST(v.CONTRATTO_CHECKOUT_INDIRIZZO AS NVARCHAR(150)),
             TRY_CAST(v.CONTRATTO_CHECKIN_DATA AS DATETIME2(0)),
             CAST(v.CONTRATTO_CHECKIN_LUOGO_COD AS NVARCHAR(9)),
-            CAST(v.CONTRATTO_CHECKIN_INDIRIZZO AS NVARCHAR(80)),
-            CAST(v.OPERATORE_ID AS NVARCHAR(9)),
-            CAST(v.AGENZIA_ID AS NVARCHAR(9)),
-            CAST(v.AGENZIA_NOME AS NVARCHAR(38)),
+            CAST(v.CONTRATTO_CHECKIN_INDIRIZZO AS NVARCHAR(150)),
+            CAST(v.OPERATORE_ID AS NVARCHAR(50)),
+            CAST(v.AGENZIA_ID AS NVARCHAR(30)),
+            CAST(v.AGENZIA_NOME AS NVARCHAR(70)),
             CAST(v.AGENZIA_LUOGO_COD AS NVARCHAR(9)),
-            CAST(v.AGENZIA_INDIRIZZO AS NVARCHAR(80)),
-            CAST(v.AGENZIA_RECAPITO_TEL AS NVARCHAR(15)),
+            CAST(v.AGENZIA_INDIRIZZO AS NVARCHAR(150)),
+            CAST(v.AGENZIA_RECAPITO_TEL AS NVARCHAR(20)),
             CAST(v.VEICOLO_TIPO AS NVARCHAR(2)),
-            CAST(v.VEICOLO_MARCA AS NVARCHAR(20)),
-            CAST(v.VEICOLO_MODELLO AS NVARCHAR(20)),
-            CAST(v.VEICOLO_TARGA AS NVARCHAR(10)),
-            CAST(v.CONDUCENTE_CONTRAENTE_COGNOME AS NVARCHAR(38)),
+            CAST(v.VEICOLO_MARCA AS NVARCHAR(50)),
+            CAST(v.VEICOLO_MODELLO AS NVARCHAR(100)),
+            CAST(v.VEICOLO_TARGA AS NVARCHAR(15)),
+            CAST(v.CONDUCENTE_CONTRAENTE_COGNOME AS NVARCHAR(50)),
             CAST(v.CONDUCENTE_CONTRAENTE_NOME AS NVARCHAR(38)),
             TRY_CAST(v.CONDUCENTE_CONTRAENTE_NASCITA_DATA AS DATETIME2(0)),
             CAST(v.CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD AS NVARCHAR(9)),
-            CAST(v.CONDUCENTE_CONTRAENTE_CITTADINANZA_COD AS NVARCHAR(3)),
-            CAST(v.CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD AS NVARCHAR(2)),
+            CAST(v.CONDUCENTE_CONTRAENTE_CITTADINANZA_COD AS NVARCHAR(9)),
+            CAST(v.CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD AS NVARCHAR(5)),
             CAST(v.CONDUCENTE_CONTRAENTE_DOCIDE_NUMERO AS NVARCHAR(20)),
             CAST(v.CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD AS NVARCHAR(9)),
             CAST(v.CONDUCENTE_CONTRAENTE_PATENTE_NUMERO AS NVARCHAR(20)),

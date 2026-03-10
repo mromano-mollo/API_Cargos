@@ -225,57 +225,57 @@ Core fields:
 - `CHECK_OK` is claimable only when `CheckOnly=False`.
 - `SnapshotHash` should represent the full queue-triggering snapshot, not only checkin/checkout, so the system can requeue a contract after a data fix even if dates stay unchanged.
 
-### CaRGOS fields to send (source: P2 tracciato record)
-The following matrix must be tracked in TA and used as source for view mapping + validation.
+### CaRGOS fields to send (source: official `TRACCIATO RECORD` / `Dimensione`)
+The following matrix is the current source of truth for validation + record build. Total fixed-width length: `1505`.
 
-| # | Field | Mandatory | Notes |
-|---|---|---|---|
-| 0 | `CONTRATTO_ID` | Yes | |
-| 1 | `CONTRATTO_DATA` | Yes | |
-| 2 | `CONTRATTO_TIPOP` | Yes | |
-| 3 | `CONTRATTO_CHECKOUT_DATA` | Yes | |
-| 4 | `CONTRATTO_CHECKOUT_LUOGO_COD` | Yes | |
-| 5 | `CONTRATTO_CHECKOUT_INDIRIZZO` | Yes | |
-| 6 | `CONTRATTO_CHECKIN_DATA` | Yes | |
-| 7 | `CONTRATTO_CHECKIN_LUOGO_COD` | Yes | |
-| 8 | `CONTRATTO_CHECKIN_INDIRIZZO` | Yes | |
-| 9 | `OPERATORE_ID` | Yes | |
-| 10 | `AGENZIA_ID` | Yes | |
-| 11 | `AGENZIA_NOME` | Yes | |
-| 12 | `AGENZIA_LUOGO_COD` | Yes | |
-| 13 | `AGENZIA_INDIRIZZO` | Yes | |
-| 14 | `AGENZIA_RECAPITO_TEL` | Yes | |
-| 15 | `VEICOLO_TIPO` | Yes | |
-| 16 | `VEICOLO_MARCA` | Yes | |
-| 17 | `VEICOLO_MODELLO` | Yes | |
-| 18 | `VEICOLO_TARGA` | Yes | |
-| 19 | `CONDUCENTE_CONTRAENTE_QUALIFICA` | No | optional |
-| 20 | `CONDUCENTE_CONTRAENTE_RUOLO` | No | optional |
-| 21 | `CONDUCENTE_CONTRAENTE_ESTERONASCITA_STATOCOD` | No | optional |
-| 22 | `CONDUCENTE_CONTRAENTE_COGNOME` | Yes | |
-| 23 | `CONDUCENTE_CONTRAENTE_NOME` | Yes | |
-| 24 | `CONDUCENTE_CONTRAENTE_NASCITA_DATA` | Yes | |
-| 25 | `CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD` | Yes | |
-| 26 | `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` | Yes | |
-| 27 | `CONDUCENTE_CONTRAENTE_RESIDENZA_LUOGO_COD` | No | conditional with field 28 |
-| 28 | `CONDUCENTE_CONTRAENTE_RESIDENZA_INDIRIZZO` | No | required if field 27 is present |
-| 29 | `CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD` | Yes | |
-| 30 | `CONDUCENTE_CONTRAENTE_DOCIDE_NUMERO` | Yes | |
-| 31 | `CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD` | Yes | |
-| 32 | `CONDUCENTE_CONTRAENTE_PATENTE_NUMERO` | Yes | |
-| 33 | `CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD` | Yes | |
-| 34 | `CONDUCENTE_CONTRAENTE_RECAPITO_TEL` | No | optional |
-| 35 | `SECONDO_CONDUCENTE_CONTRAENTE_QUALIFICA` | No | second-driver block, all-or-nothing |
-| 36 | `SECONDO_CONDUCENTE_CONTRAENTE_RUOLO` | No | second-driver block, all-or-nothing |
-| 37 | `SECONDO_CONDUCENTE_CONTRAENTE_COGNOME` | No | second-driver block, all-or-nothing |
-| 38 | `SECONDO_CONDUCENTE_CONTRAENTE_NOME` | No | second-driver block, all-or-nothing |
-| 39 | `SECONDO_CONDUCENTE_CONTRAENTE_NASCITA_DATA` | No | second-driver block, all-or-nothing |
-| 40 | `SECONDO_CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD` | No | second-driver block, all-or-nothing |
-| 41 | `SECONDO_CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` | No | second-driver block, all-or-nothing |
-| 42 | `SECONDO_CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD` | No | second-driver block, all-or-nothing |
-| 43 | `SECONDO_CONDUCENTE_CONTRAENTE_DOCIDE_NUMERO` | No | second-driver block, all-or-nothing |
-| 44 | `SECONDO_CONDUCENTE_CONTRAENTE_PATENTE_NUMERO` | No | second-driver block, all-or-nothing |
-| 45 | `SECONDO_CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD` | No | second-driver block, all-or-nothing |
+| # | Field | Dim | Mandatory | Notes |
+|---|---|---:|---|---|
+| 0 | `CONTRATTO_ID` | 50 | Yes | |
+| 1 | `CONTRATTO_DATA` | 16 | Yes | `dd/MM/yyyy HH:mm` in the fixed-width line |
+| 2 | `CONTRATTO_TIPOP` | 1 | Yes | |
+| 3 | `CONTRATTO_CHECKOUT_DATA` | 16 | Yes | `dd/MM/yyyy HH:mm` |
+| 4 | `CONTRATTO_CHECKOUT_LUOGO_COD` | 9 | Yes | Polizia lookup code |
+| 5 | `CONTRATTO_CHECKOUT_INDIRIZZO` | 150 | Yes | |
+| 6 | `CONTRATTO_CHECKIN_DATA` | 16 | Yes | `dd/MM/yyyy HH:mm` |
+| 7 | `CONTRATTO_CHECKIN_LUOGO_COD` | 9 | Yes | Polizia lookup code |
+| 8 | `CONTRATTO_CHECKIN_INDIRIZZO` | 150 | Yes | |
+| 9 | `OPERATORE_ID` | 50 | Yes | |
+| 10 | `AGENZIA_ID` | 30 | Yes | API payload limit; internal agency snapshot table keeps `NVARCHAR(50)` |
+| 11 | `AGENZIA_NOME` | 70 | Yes | |
+| 12 | `AGENZIA_LUOGO_COD` | 9 | Yes | Polizia lookup code |
+| 13 | `AGENZIA_INDIRIZZO` | 150 | Yes | |
+| 14 | `AGENZIA_RECAPITO_TEL` | 20 | Yes | |
+| 15 | `VEICOLO_TIPO` | 1 | Yes | Polizia lookup code |
+| 16 | `VEICOLO_MARCA` | 50 | Yes | |
+| 17 | `VEICOLO_MODELLO` | 100 | Yes | |
+| 18 | `VEICOLO_TARGA` | 15 | Yes | |
+| 19 | `VEICOLO_COLORE` | 50 | No | currently written as blank if unavailable |
+| 20 | `VEICOLO_GPS` | 1 | No | currently written as blank if unavailable |
+| 21 | `VEICOLO_BLOCCOM` | 1 | No | currently written as blank if unavailable |
+| 22 | `CONDUCENTE_CONTRAENTE_COGNOME` | 50 | Yes | |
+| 23 | `CONDUCENTE_CONTRAENTE_NOME` | 30 | Yes | |
+| 24 | `CONDUCENTE_CONTRAENTE_NASCITA_DATA` | 10 | Yes | `dd/MM/yyyy` |
+| 25 | `CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD` | 9 | Yes | Polizia lookup code |
+| 26 | `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` | 9 | Yes | Polizia lookup code |
+| 27 | `CONDUCENTE_CONTRAENTE_RESIDENZA_LUOGO_COD` | 9 | No | optional |
+| 28 | `CONDUCENTE_CONTRAENTE_RESIDENZA_INDIRIZZO` | 150 | No | optional |
+| 29 | `CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD` | 5 | Yes | Polizia lookup code |
+| 30 | `CONDUCENTE_CONTRAENTE_DOCIDE_NUMERO` | 20 | Yes | |
+| 31 | `CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD` | 9 | Yes | Polizia lookup code |
+| 32 | `CONDUCENTE_CONTRAENTE_PATENTE_NUMERO` | 20 | Yes | |
+| 33 | `CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD` | 9 | Yes | Polizia lookup code |
+| 34 | `CONDUCENTE_CONTRAENTE_RECAPITO_TEL` | 20 | No | optional |
+| 35 | `CONDUCENTE2_COGNOME` | 50 | No | second-driver block, currently blank |
+| 36 | `CONDUCENTE2_NOME` | 30 | No | second-driver block, currently blank |
+| 37 | `CONDUCENTE2_NASCITA_DATA` | 10 | No | second-driver block, currently blank |
+| 38 | `CONDUCENTE2_NASCITA_LUOGO_COD` | 9 | No | second-driver block, currently blank |
+| 39 | `CONDUCENTE2_CITTADINANZA_COD` | 9 | No | second-driver block, currently blank |
+| 40 | `CONDUCENTE2_DOCIDE_TIPO_COD` | 5 | No | second-driver block, currently blank |
+| 41 | `CONDUCENTE2_DOCIDE_NUMERO` | 20 | No | second-driver block, currently blank |
+| 42 | `CONDUCENTE2_DOCIDE_LUOGORIL_COD` | 9 | No | second-driver block, currently blank |
+| 43 | `CONDUCENTE2_PATENTE_NUMERO` | 20 | No | second-driver block, currently blank |
+| 44 | `CONDUCENTE2_PATENTE_LUOGORIL_COD` | 9 | No | second-driver block, currently blank |
+| 45 | `CONDUCENTE2_RECAPITO_TEL` | 20 | No | second-driver block, currently blank |
 
 ### Alternative approaches considered
 - Pure application sync (read view + compare + enqueue in VB.NET).
@@ -751,6 +751,8 @@ Notes:
 - [x] Added SQL tracking tables `Cargos_Agenzie` and `Cargos_Agenzie_Frontiera`.
 - [x] Added `CargosWeb.*` settings for web auth and startup agency load.
 - [x] Added structured agency luogo resolution using `AgenziaCity`, `AgenziaCounty`, and `AgenziaPostCode`.
+- [x] Realigned `RecordBuilder` and validation limits to the current official `TRACCIATO RECORD` dimensions.
+- [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns to use byte-length semantics during schema upgrades.
 
 ---
 
