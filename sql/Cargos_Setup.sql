@@ -7,7 +7,10 @@
     Required identity columns:
       - ContractNo or [Contract No_] (legacy ContractId accepted)
       - ContractLineNo
+
+    Optional internal metadata columns:
       - BranchId
+      - BranchEmail
 
     Required mandatory CaRGOS columns:
       CONTRATTO_ID
@@ -1032,7 +1035,6 @@ BEGIN
     DECLARE @RequiredColumns TABLE (ColumnName SYSNAME NOT NULL);
     INSERT INTO @RequiredColumns (ColumnName)
     VALUES
-        (N'BranchId'),
         (N'CONTRATTO_ID'),
         (N'CONTRATTO_DATA'),
         (N'CONTRATTO_TIPOP'),
@@ -1078,6 +1080,7 @@ BEGIN
     DECLARE @ContractNoExpression NVARCHAR(256);
     DECLARE @ContractLineNoExpression NVARCHAR(256);
     DECLARE @CargosContractIdExpression NVARCHAR(256);
+    DECLARE @BranchIdExpression NVARCHAR(256) = N'CAST(N'''' AS NVARCHAR(50))';
     DECLARE @BranchEmailExpression NVARCHAR(256) = N'NULL';
     DECLARE @RecordLineExpression NVARCHAR(256) = N'NULL';
 
@@ -1099,6 +1102,9 @@ BEGIN
         SET @CargosContractIdExpression = N'CAST(v.CargosContractId AS NVARCHAR(50))';
     ELSE
         SET @CargosContractIdExpression = @ContractNoExpression;
+
+    IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'BranchId') IS NOT NULL
+        SET @BranchIdExpression = N'CAST(v.BranchId AS NVARCHAR(50))';
 
     IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'BranchEmail') IS NOT NULL
         SET @BranchEmailExpression = N'CAST(v.BranchEmail AS NVARCHAR(255))';
@@ -1180,7 +1186,7 @@ BEGIN
             ' + @ContractNoExpression + N',
             ' + @ContractLineNoExpression + N',
             CAST(ISNULL(' + @CargosContractIdExpression + N', ' + @ContractNoExpression + N') AS NVARCHAR(50)),
-            CAST(v.BranchId AS NVARCHAR(50)),
+            ' + @BranchIdExpression + N',
             ' + @BranchEmailExpression + N',
             CAST(v.CONTRATTO_ID AS NVARCHAR(50)),
             TRY_CAST(v.CONTRATTO_DATA AS DATETIME2(0)),
@@ -1236,8 +1242,6 @@ BEGIN
                 'SHA2_256',
                 CONCAT(
                     ISNULL(s.CargosContractId, ''), '|',
-                    ISNULL(s.BranchId, ''), '|',
-                    ISNULL(s.BranchEmail, ''), '|',
                     ISNULL(s.ContrattoId, ''), '|',
                     ISNULL(CONVERT(VARCHAR(33), s.ContrattoData, 126), ''), '|',
                     ISNULL(s.ContrattoTipoP, ''), '|',

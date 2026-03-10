@@ -148,10 +148,10 @@ Keep one row per contract-line as the latest extracted state from `Cargos_Vista_
 Core fields:
 - `ContractNo` + `ContractLineNo` (unique key)
 - `CargosContractId`
-- `BranchId`
+- `BranchId` optional internal metadata only
 - all mandatory CaRGOS payload fields
 - `DateFingerprint` (normalized hash from checkin/checkout)
-- `PayloadFingerprint` (normalized hash from mandatory payload fields used by validation/record build)
+- `PayloadFingerprint` (normalized hash from mandatory payload fields used by validation/record build; excludes internal metadata such as `BranchId` and `BranchEmail`)
 - `LastQueuedFingerprint`
 - `LastQueuedAt`
 - `LastSeenAt`
@@ -160,7 +160,7 @@ Core fields:
 Core fields:
 - `ContractNo` + `ContractLineNo`
 - `CargosContractId`
-- `BranchId`
+- `BranchId` optional internal metadata only
 - same mandatory payload columns copied from snapshot at enqueue time
 - `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
 - `SnapshotHash`
@@ -586,7 +586,7 @@ CREATE TABLE dbo.Cargos_Contratti (
     ContractNo NVARCHAR(50) NOT NULL,
     ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
-    BranchId NVARCHAR(50) NOT NULL,
+    BranchId NVARCHAR(50) NOT NULL, -- optional metadata; empty allowed if source view does not expose it
     -- mandatory CaRGOS payload columns (Contratto*, OperatoreId, Agenzia*, Veicolo*, Conducente*)
     ContrattoCheckinData DATETIME2 NULL,
     ContrattoCheckoutData DATETIME2 NULL,
@@ -605,7 +605,7 @@ CREATE TABLE dbo.Cargos_Contratti_Frontiera (
     ContractNo NVARCHAR(50) NOT NULL,
     ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
-    BranchId NVARCHAR(50) NOT NULL,
+    BranchId NVARCHAR(50) NOT NULL, -- optional metadata; empty allowed if source view does not expose it
     -- same mandatory CaRGOS payload columns snapshot
     Reason NVARCHAR(30) NOT NULL, -- INITIAL_SEND | DATE_CHANGE | DATA_FIX
     SnapshotHash NVARCHAR(128) NOT NULL,
@@ -753,6 +753,7 @@ Notes:
 - [x] Added structured agency luogo resolution using `AgenziaCity`, `AgenziaCounty`, and `AgenziaPostCode`.
 - [x] Realigned `RecordBuilder` and validation limits to the current official `TRACCIATO RECORD` dimensions.
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns to use byte-length semantics during schema upgrades.
+- [x] Made contract `BranchId` optional in `Cargos_Vista_Contratti` and removed branch-only metadata from `PayloadFingerprint`.
 
 ---
 

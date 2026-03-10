@@ -32,9 +32,10 @@ Namespace Notifications
             End If
 
             Dim subject As String = String.Format("CARGOS - Missing mandatory data for contract {0}/{1}", item.ContractNo, item.ContractLineNo)
+            Dim branchLine As String = If(String.IsNullOrWhiteSpace(item.BranchId), String.Empty, "Branch: " & item.BranchId & Environment.NewLine)
             Dim body As String =
                 "Contract: " & item.ContractNo & "/" & item.ContractLineNo & Environment.NewLine &
-                "Branch: " & item.BranchId & Environment.NewLine &
+                branchLine &
                 "Missing CaRGOS fields: " & Environment.NewLine &
                 String.Join(Environment.NewLine, validation.MissingFields.Select(Function(x) "- " & x))
 
@@ -51,9 +52,10 @@ Namespace Notifications
             End If
 
             Dim subject As String = String.Format("CARGOS - Rejected contract {0}/{1}", item.ContractNo, item.ContractLineNo)
+            Dim branchLine As String = If(String.IsNullOrWhiteSpace(item.BranchId), String.Empty, "Branch: " & item.BranchId & Environment.NewLine)
             Dim body As String =
                 "Contract: " & item.ContractNo & "/" & item.ContractLineNo & Environment.NewLine &
-                "Branch: " & item.BranchId & Environment.NewLine &
+                branchLine &
                 "CaRGOS reject details: " & Environment.NewLine &
                 normalizedMessage
 

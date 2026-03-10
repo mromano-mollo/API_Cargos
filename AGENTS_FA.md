@@ -271,7 +271,7 @@ Fields:
 - `ContractNo` (our contract number, e.g. `CTR26-xxxxxx`)
 - `ContractLineNo` (contract line number)
 - `CargosContractId`
-- `BranchId`
+- `BranchId` (optional internal metadata, not part of the CaRGOS payload)
 - All mandatory CaRGOS payload fields (stored as normalized columns):
   - `ContrattoId`, `ContrattoData`, `ContrattoTipoP`
   - `ContrattoCheckoutData`, `ContrattoCheckoutLuogoCod`, `ContrattoCheckoutIndirizzo`
@@ -285,7 +285,7 @@ Fields:
   - `ConducenteContraenteDocideTipoCod`, `ConducenteContraenteDocideNumero`, `ConducenteContraenteDocideLuogorilCod`
   - `ConducenteContraentePatenteNumero`, `ConducenteContraentePatenteLuogorilCod`
 - `DateFingerprint` (hash/string built from normalized checkin/checkout)
-- `PayloadFingerprint` (hash/string built from mandatory payload used by validation/record build)
+- `PayloadFingerprint` (hash/string built only from CaRGOS payload fields used by validation/record build; excludes internal metadata like `BranchId` / `BranchEmail`)
 - `LastQueuedFingerprint` (hash/string of last enqueued snapshot)
 - `LastQueuedAt` (datetime)
 - `LastSeenAt` (datetime)
@@ -297,7 +297,7 @@ Fields:
 - `ContractNo`
 - `ContractLineNo`
 - `CargosContractId` (value used in CaRGOS record, if different)
-- `BranchId`
+- `BranchId` (optional internal metadata)
 - Same mandatory CaRGOS payload columns listed for `Cargos_Contratti` (snapshot at queue creation time)
 - `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
 - `SnapshotHash` (hash/string of snapshot used for this send item)
