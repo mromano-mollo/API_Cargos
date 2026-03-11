@@ -49,3 +49,8 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_branch_optional\
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_branch_optional\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_branch_optional\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_branch_optional\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_citizenship_fix\API_Cargos.exe.config
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_citizenship_fix\API_Cargos.exe
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_citizenship_fix\API_Cargos.pdb
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_citizenship_fix\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\obj\Debug\API_Cargos.exe.config
