@@ -597,6 +597,7 @@ Add correlation id per batch to link logs.
 - [x] Enlarged undersized SQL/app agency fields to avoid truncation before web/API submission (`AgenziaId` internal 50; API validation still 30; name/address/tel aligned to official sizes).
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns so rerunning `Cargos_Setup.sql` applies length upgrades correctly.
 - [x] Added daily overdue open-rental normalization: open extracted contracts with past `CONTRATTO_CHECKIN_DATA` are resent with today's effective check-in date once per day.
+- [x] Applied `WITH (NOLOCK)` only on source extraction views where eventual consistency is acceptable; queue/snapshot tables remain without `NOLOCK`.
 
 ---
 

@@ -47,25 +47,25 @@ SELECT HCTR.[Contract No_] AS ContractNo,
 	     CExt.[MOL001 Driving License Nr_$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_PATENTE_NUMERO,
 	     dbo.CargosGetLuogo(CExt.[MOL001 Driving License Place$7faa03b3-b4e5-4f14-b271-d84574b763cf], 0) AS CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD
 
-  FROM BC.dbo.[Mollo Srl$AR Contract Header] HCTR
+  FROM BC.dbo.[Mollo Srl$AR Contract Header] HCTR WITH(NOLOCK)
 
-  LEFT JOIN BC.dbo.[Mollo Srl$AR Contract Line] LCTR
+  LEFT JOIN BC.dbo.[Mollo Srl$AR Contract Line] LCTR WITH(NOLOCK)
     ON HCTR.[Contract Type] = LCTR.[Contract Type]
    AND HCTR.[Contract No_] = LCTR.[Contract No_]
 
-  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Contact$437dbf0e-84ff-417a-965d-ed2bb9650972] C
+  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Contact$437dbf0e-84ff-417a-965d-ed2bb9650972] C WITH(NOLOCK)
     ON C.[no_] = HCTR.[Cargos Contatto 1]
 
-  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Contact$437dbf0e-84ff-417a-965d-ed2bb9650972$ext] CExt
+  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Contact$437dbf0e-84ff-417a-965d-ed2bb9650972$ext] CExt WITH(NOLOCK)
     ON CExt.[no_] = C.[no_]
 
-  LEFT JOIN Cargos_Agenzie Cargos_CheckOut
+  LEFT JOIN Cargos_Agenzie Cargos_CheckOut WITH(NOLOCK)
     ON Cargos_CheckOut.AgenziaId = LCTR.[Ubicazione Consegna] COLLATE Latin1_General_100_CI_AS
 
-  LEFT JOIN Cargos_Agenzie Cargos_CheckIn
+  LEFT JOIN Cargos_Agenzie Cargos_CheckIn WITH(NOLOCK)
     ON Cargos_CheckIn.AgenziaId = ISNULL(LCTR.[Ubicazione Reso], LCTR.[Ubicazione Consegna]) COLLATE Latin1_General_100_CI_AS
 
-  LEFT JOIN BC.dbo.[Mollo Srl$AR Object Card] Obj
+  LEFT JOIN BC.dbo.[Mollo Srl$AR Object Card] Obj WITH(NOLOCK)
     ON Obj.[Object No_] = LCTR.No_
 
  WHERE 1 = 1

@@ -328,6 +328,7 @@ Implementation detail:
 - Keep field metadata in a structured mapping file (JSON/CSV) versioned in repository.
 - Separate field metadata from business rules to simplify updates when police record layout changes.
 - SQL/view validation reduces noise and queue volume, but it must never replace the app validation step.
+- `WITH (NOLOCK)` is acceptable on source/lookup extraction views where eventual consistency is tolerable; do not use it on snapshot/outbox tables (`Cargos_Contratti`, `Cargos_Contratti_Frontiera`) because it weakens queue correctness.
 
 ## 4.5 RecordBuilder (fixed-width 1505)
 Requirements:
@@ -756,6 +757,7 @@ Notes:
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns to use byte-length semantics during schema upgrades.
 - [x] Made contract `BranchId` optional in `Cargos_Vista_Contratti` and removed branch-only metadata from `PayloadFingerprint`.
 - [x] Added daily overdue open-rental normalization in `Cargos_Sync_Contratti_Frontiera` before date/payload hashing.
+- [x] Applied `WITH (NOLOCK)` on contract source-view reads only; kept queue/snapshot tables without `NOLOCK`.
 
 ---
 
