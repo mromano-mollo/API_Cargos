@@ -144,9 +144,9 @@ Extraction eligibility rule: process only rows from `Cargos_Vista_Contratti`, wh
 Use table `Cargos_Contratti_Frontiera` as single source for processing state.
 
 ### Snapshot state table (`Cargos_Contratti`)
-Keep one row per contract-line as the latest extracted state from `Cargos_Vista_Contratti`.
+Keep one row per company-contract-line as the latest extracted state from `Cargos_Vista_Contratti`.
 Core fields:
-- `ContractNo` + `ContractLineNo` (unique key)
+- `Company` + `ContractNo` + `ContractLineNo` (unique key; `Company` defaults to `MOLLO` if the source view does not expose it yet)
 - `CargosContractId`
 - `BranchId` optional internal metadata only
 - all mandatory CaRGOS payload fields
@@ -158,7 +158,7 @@ Core fields:
 
 ### Outbox table (`Cargos_Contratti_Frontiera`)
 Core fields:
-- `ContractNo` + `ContractLineNo`
+- `Company` + `ContractNo` + `ContractLineNo`
 - `CargosContractId`
 - `BranchId` optional internal metadata only
 - same mandatory payload columns copied from snapshot at enqueue time
@@ -216,7 +216,7 @@ Core fields:
   - `TIPO_PAGAMENTO`
 
 ### Idempotency constraints
-- Unique key on `(ContractNo, ContractLineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
+- Unique key on `(Company, ContractNo, ContractLineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
 - Records with `SENT_OK` are never eligible again for the same snapshot.
 - Selection query should process only the latest pending/retry snapshot per contract to avoid sending obsolete data.
 - Eligibility predicate:
@@ -573,7 +573,7 @@ Correlation:
 Before send, enforce:
 - status eligibility
 - not already `SENT_OK`
-- no duplicate `(ContractNo, ContractLineNo, SnapshotHash)` in queue
+- no duplicate `(Company, ContractNo, ContractLineNo, SnapshotHash)` in queue
 - worker claim/reservation step before send
 - do not pick an older retry row if a newer snapshot already exists for the same contract-line
 - optional optimistic concurrency with `UpdatedAt`/row version
@@ -588,6 +588,7 @@ Key DB shape:
 ```sql
 CREATE TABLE dbo.Cargos_Contratti (
     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    Company NVARCHAR(50) NOT NULL,
     ContractNo NVARCHAR(50) NOT NULL,
     ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
@@ -602,11 +603,12 @@ CREATE TABLE dbo.Cargos_Contratti (
     LastSeenAt DATETIME2 NOT NULL,
     CreatedAt DATETIME2 NOT NULL,
     UpdatedAt DATETIME2 NOT NULL,
-    CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, ContractLineNo)
+    CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (Company, ContractNo, ContractLineNo)
 );
 
 CREATE TABLE dbo.Cargos_Contratti_Frontiera (
     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    Company NVARCHAR(50) NOT NULL,
     ContractNo NVARCHAR(50) NOT NULL,
     ContractLineNo BIGINT NOT NULL,
     CargosContractId NVARCHAR(50) NOT NULL,
@@ -630,7 +632,7 @@ CREATE TABLE dbo.Cargos_Contratti_Frontiera (
 );
 
 CREATE UNIQUE INDEX UQ_Cargos_Contratti_Frontiera_Snapshot
-ON dbo.Cargos_Contratti_Frontiera(ContractNo, ContractLineNo, SnapshotHash);
+ON dbo.Cargos_Contratti_Frontiera(Company, ContractNo, ContractLineNo, SnapshotHash);
 
 CREATE INDEX IX_Cargos_Contratti_Frontiera_StatusRetry
 ON dbo.Cargos_Contratti_Frontiera(Status, NextRetryAt);
@@ -762,6 +764,7 @@ Notes:
 - [x] Added daily overdue open-rental normalization in `Cargos_Sync_Contratti_Frontiera` before date/payload hashing.
 - [x] Applied `WITH (NOLOCK)` on contract source-view reads only; kept queue/snapshot tables without `NOLOCK`.
 - [x] Added citizenship resolution for `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` and foreign-driver fixed-code override for birth/document/license luogo fields.
+- [x] Added multi-company contract partitioning with `Company` as part of the snapshot/outbox identity and queue idempotency key; sync defaults to `MOLLO` when the source view does not expose `Company` yet.
 
 ---
 

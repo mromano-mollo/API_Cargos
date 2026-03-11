@@ -64,7 +64,7 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 
 ### FR-06 → Idempotency / No duplicate sending
 - The service must not send the same contract snapshot twice.
-- Implement internal tracking tables where queue idempotency is keyed by `ContractNo + ContractLineNo + SnapshotHash`.
+- Implement internal tracking tables where queue idempotency is keyed by `Company + ContractNo + ContractLineNo + SnapshotHash`.
 
 ### FR-07 - Re-send when contract date fields change
 - If `CONTRATTO_CHECKIN_DATA` or `CONTRATTO_CHECKOUT_DATA` changes for an already processed contract, the service must send a new call to CaRGOS with updated data.
@@ -265,9 +265,10 @@ Naming convention: every new CARGOS table must start with `Cargos_` prefix.
   - stores startup agency bootstrap queue and outcomes for `CARGOS_WEB/Agenzia/Create`
 
 ### Snapshot table: `Cargos_Contratti`
-Purpose: keep one current state row per contract-line for change detection.
+Purpose: keep one current state row per company-contract-line for change detection.
 Fields:
 - `Id` (PK)
+- `Company` (logical company partition, e.g. `MOLLO`, `MANETTA`, `PARMIANI`; defaults to `MOLLO` if source view does not expose it yet)
 - `ContractNo` (our contract number, e.g. `CTR26-xxxxxx`)
 - `ContractLineNo` (contract line number)
 - `CargosContractId`
@@ -295,6 +296,7 @@ Fields:
 ### Suggested table: `Cargos_Contratti_Frontiera`
 Fields:
 - `Id` (PK)
+- `Company`
 - `ContractNo`
 - `ContractLineNo`
 - `CargosContractId` (value used in CaRGOS record, if different)
@@ -321,7 +323,7 @@ Fields:
 ### Idempotency rule
 - A queue item is eligible for processing only if status in `{PENDING, READY_TO_SEND, SENT_KO_RETRY}`.
 - `CHECK_OK` is a parked state used when `CheckOnly=True`; it must not be rechecked in check-only mode, but it can be picked later for real send when check-only mode is disabled.
-- Prevent duplicate queue creation for same contract snapshot using unique key `(ContractNo, ContractLineNo, SnapshotHash)`.
+- Prevent duplicate queue creation for same contract snapshot using unique key `(Company, ContractNo, ContractLineNo, SnapshotHash)`.
 
 ---
 
@@ -578,7 +580,7 @@ Add correlation id per batch to link logs.
 - [x] Added sync procedure `dbo.Cargos_Sync_Contratti_Frontiera` (view extraction + snapshot upsert + outbox enqueue).
 - [x] Added mandatory CaRGOS payload columns in both `Cargos_Contratti` and `Cargos_Contratti_Frontiera`.
 - [x] Added real CaRGOS token flow and Send call pipeline with status transitions (`SENT_OK`, `SENT_KO_DATA`, `SENT_KO_RETRY`).
-- [x] Added unique idempotency index `(ContractNo, ContractLineNo, SnapshotHash)` in `Cargos_Contratti_Frontiera`.
+- [x] Added multi-company contract partitioning with `Company` in the snapshot/outbox key and idempotency index `(Company, ContractNo, ContractLineNo, SnapshotHash)`.
 - [x] Added payload-fix reprocessing model (`DATA_FIX`) in analysis and implementation target.
 - [x] Added long-running single-instance host loop model with sleep and cutoff hour.
 - [x] Added app-side validation, record building, notification, and anti-spam implementation.

@@ -8,6 +8,9 @@
       - ContractNo or [Contract No_] (legacy ContractId accepted)
       - ContractLineNo
 
+    Optional logical partition column:
+      - Company (if absent, sync defaults to `MOLLO`)
+
     Optional internal metadata columns:
       - BranchId
       - BranchEmail
@@ -56,6 +59,7 @@ BEGIN
     CREATE TABLE dbo.Cargos_Contratti
     (
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Contratti PRIMARY KEY,
+        Company NVARCHAR(50) NOT NULL,
         ContractNo NVARCHAR(50) NOT NULL,
         [ContractLineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
@@ -102,7 +106,7 @@ BEGIN
     );
 
     ALTER TABLE dbo.Cargos_Contratti
-        ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, [ContractLineNo]);
+        ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (Company, ContractNo, [ContractLineNo]);
 END;
 GO
 
@@ -556,6 +560,7 @@ BEGIN
     CREATE TABLE dbo.Cargos_Contratti_Frontiera
     (
         Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Contratti_Frontiera PRIMARY KEY,
+        Company NVARCHAR(50) NOT NULL,
         ContractNo NVARCHAR(50) NOT NULL,
         [ContractLineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) NOT NULL,
@@ -669,6 +674,7 @@ BEGIN
 
     INSERT INTO @ContrattiColumns (ColumnName, ColumnDefinition)
     VALUES
+        (N'Company', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Company DEFAULT (N''MOLLO'')'),
         (N'ContractNo', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_ContractNo DEFAULT (N'''')'),
         (N'ContractLineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Contratti_ContractLineNo DEFAULT (0)'),
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_CargosContractId DEFAULT (N'''')'),
@@ -721,6 +727,8 @@ BEGIN
 
     EXEC sys.sp_executesql @SqlAddContratti;
 
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'Company') < 100
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN Company NVARCHAR(50) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContrattoId') < 100
         ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ContrattoId NVARCHAR(50) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContrattoCheckoutIndirizzo') < 300
@@ -759,6 +767,20 @@ BEGIN
     )
         ALTER TABLE dbo.Cargos_Contratti DROP CONSTRAINT UQ_Cargos_Contratti_Contract;
 
+    UPDATE dbo.Cargos_Contratti
+    SET Company = N'MOLLO'
+    WHERE Company IS NULL
+       OR LTRIM(RTRIM(Company)) = N'';
+
+    IF EXISTS (
+        SELECT 1
+        FROM sys.key_constraints
+        WHERE [type] = 'UQ'
+          AND [name] = N'UQ_Cargos_Contratti_ContractLine'
+          AND parent_object_id = OBJECT_ID(N'dbo.Cargos_Contratti')
+    )
+        ALTER TABLE dbo.Cargos_Contratti DROP CONSTRAINT UQ_Cargos_Contratti_ContractLine;
+
     IF NOT EXISTS (
         SELECT 1
         FROM sys.key_constraints
@@ -767,7 +789,7 @@ BEGIN
           AND parent_object_id = OBJECT_ID(N'dbo.Cargos_Contratti')
     )
         ALTER TABLE dbo.Cargos_Contratti
-            ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (ContractNo, [ContractLineNo]);
+            ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (Company, ContractNo, [ContractLineNo]);
 END;
 GO
 
@@ -785,6 +807,7 @@ BEGIN
 
     INSERT INTO @FrontieraColumns (ColumnName, ColumnDefinition)
     VALUES
+        (N'Company', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_Company DEFAULT (N''MOLLO'')'),
         (N'ContractNo', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_ContractNo DEFAULT (N'''')'),
         (N'ContractLineNo', N'BIGINT NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_ContractLineNo DEFAULT (0)'),
         (N'CargosContractId', N'NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CargosContractId DEFAULT (N'''')'),
@@ -846,6 +869,8 @@ BEGIN
 
     EXEC sys.sp_executesql @SqlAddFrontiera;
 
+    IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'Company') < 100
+        ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN Company NVARCHAR(50) NOT NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContrattoId') < 100
         ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ContrattoId NVARCHAR(50) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ContrattoCheckoutIndirizzo') < 300
@@ -874,6 +899,11 @@ BEGIN
         ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti_Frontiera', N'ConducenteContraenteDocideTipoCod') < 10
         ALTER TABLE dbo.Cargos_Contratti_Frontiera ALTER COLUMN ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL;
+
+    UPDATE dbo.Cargos_Contratti_Frontiera
+    SET Company = N'MOLLO'
+    WHERE Company IS NULL
+       OR LTRIM(RTRIM(Company)) = N'';
 END;
 GO
 
@@ -1006,7 +1036,7 @@ BEGIN
         DROP INDEX UQ_Cargos_Contratti_Frontiera_Snapshot ON dbo.Cargos_Contratti_Frontiera;
 
     CREATE UNIQUE INDEX UQ_Cargos_Contratti_Frontiera_Snapshot
-    ON dbo.Cargos_Contratti_Frontiera (ContractNo, [ContractLineNo], SnapshotHash)
+    ON dbo.Cargos_Contratti_Frontiera (Company, ContractNo, [ContractLineNo], SnapshotHash)
     WHERE SnapshotHash IS NOT NULL;
 END;
 GO
@@ -1078,6 +1108,7 @@ BEGIN
 
     DECLARE @NowUtc DATETIME2 = SYSUTCDATETIME();
     DECLARE @TodayLocalDate DATE = CONVERT(DATE, SYSDATETIME());
+    DECLARE @CompanyExpression NVARCHAR(256) = N'CAST(N''MOLLO'' AS NVARCHAR(50))';
     DECLARE @ContractNoExpression NVARCHAR(256);
     DECLARE @ContractLineNoExpression NVARCHAR(256);
     DECLARE @CargosContractIdExpression NVARCHAR(256);
@@ -1099,6 +1130,9 @@ BEGIN
     ELSE
         THROW 50004, N'View dbo.Cargos_Vista_Contratti must expose ContractLineNo or LineNo or [Line No_].', 1;
 
+    IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'Company') IS NOT NULL
+        SET @CompanyExpression = N'ISNULL(NULLIF(LTRIM(RTRIM(CAST(v.Company AS NVARCHAR(50)))), N''''), N''MOLLO'')';
+
     IF COL_LENGTH(N'dbo.Cargos_Vista_Contratti', N'CargosContractId') IS NOT NULL
         SET @CargosContractIdExpression = N'CAST(v.CargosContractId AS NVARCHAR(50))';
     ELSE
@@ -1117,6 +1151,7 @@ BEGIN
 
     DECLARE @Queued TABLE
     (
+        Company NVARCHAR(50) NOT NULL,
         ContractNo NVARCHAR(50) NOT NULL,
         [ContractLineNo] BIGINT NOT NULL,
         SnapshotHash NVARCHAR(128) NOT NULL
@@ -1127,6 +1162,7 @@ BEGIN
 
     CREATE TABLE #SourceContracts
     (
+        Company NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
         ContractNo NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
         [ContractLineNo] BIGINT NOT NULL,
         CargosContractId NVARCHAR(50) COLLATE DATABASE_DEFAULT NOT NULL,
@@ -1171,7 +1207,7 @@ BEGIN
     DECLARE @Sql NVARCHAR(MAX) = N'
         INSERT INTO #SourceContracts
         (
-            ContractNo, ContractLineNo, CargosContractId, BranchId, BranchEmail,
+            Company, ContractNo, ContractLineNo, CargosContractId, BranchId, BranchEmail,
             ContrattoId, ContrattoData, ContrattoTipoP,
             ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
             ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -1184,6 +1220,7 @@ BEGIN
             ConducenteContraentePatenteLuogorilCod, RecordLine
         )
         SELECT
+            ' + @CompanyExpression + N',
             ' + @ContractNoExpression + N',
             ' + @ContractLineNoExpression + N',
             CAST(ISNULL(' + @CargosContractIdExpression + N', ' + @ContractNoExpression + N') AS NVARCHAR(50)),
@@ -1320,21 +1357,24 @@ BEGIN
             END
     FROM #SourceContracts s
     LEFT JOIN dbo.Cargos_Contratti c
-        ON c.ContractNo = s.ContractNo
+        ON c.Company = s.Company
+       AND c.ContractNo = s.ContractNo
        AND c.[ContractLineNo] = s.[ContractLineNo]
     OUTER APPLY
     (
         SELECT TOP (1)
             f.Status
         FROM dbo.Cargos_Contratti_Frontiera f
-        WHERE f.ContractNo = s.ContractNo
+        WHERE f.Company = s.Company
+          AND f.ContractNo = s.ContractNo
           AND f.[ContractLineNo] = s.[ContractLineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
     ) lastf;
 
     MERGE dbo.Cargos_Contratti AS tgt
     USING #SourceContracts AS src
-        ON tgt.ContractNo = src.ContractNo
+        ON tgt.Company = src.Company
+       AND tgt.ContractNo = src.ContractNo
        AND tgt.[ContractLineNo] = src.[ContractLineNo]
     WHEN MATCHED THEN
         UPDATE SET
@@ -1379,7 +1419,7 @@ BEGIN
     WHEN NOT MATCHED THEN
         INSERT
         (
-            ContractNo, [ContractLineNo], CargosContractId, BranchId, BranchEmail,
+            Company, ContractNo, [ContractLineNo], CargosContractId, BranchId, BranchEmail,
             ContrattoId, ContrattoData, ContrattoTipoP,
             ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
             ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -1395,7 +1435,7 @@ BEGIN
         )
         VALUES
         (
-            src.ContractNo, src.[ContractLineNo], src.CargosContractId, src.BranchId, src.BranchEmail,
+            src.Company, src.ContractNo, src.[ContractLineNo], src.CargosContractId, src.BranchId, src.BranchEmail,
             src.ContrattoId, src.ContrattoData, src.ContrattoTipoP,
             src.ContrattoCheckoutData, src.ContrattoCheckoutLuogoCod, src.ContrattoCheckoutIndirizzo,
             src.ContrattoCheckinData, src.ContrattoCheckinLuogoCod, src.ContrattoCheckinIndirizzo,
@@ -1412,7 +1452,7 @@ BEGIN
 
     INSERT INTO dbo.Cargos_Contratti_Frontiera
     (
-        ContractNo, [ContractLineNo], CargosContractId, BranchId, BranchEmail,
+        Company, ContractNo, [ContractLineNo], CargosContractId, BranchId, BranchEmail,
         ContrattoId, ContrattoData, ContrattoTipoP,
         ContrattoCheckoutData, ContrattoCheckoutLuogoCod, ContrattoCheckoutIndirizzo,
         ContrattoCheckinData, ContrattoCheckinLuogoCod, ContrattoCheckinIndirizzo,
@@ -1427,10 +1467,10 @@ BEGIN
         LastMissingEmailAt, LastMissingFieldsHash, LastRejectEmailAt, LastRejectHash,
         CreatedAt, UpdatedAt
     )
-    OUTPUT inserted.ContractNo, inserted.[ContractLineNo], inserted.SnapshotHash
-        INTO @Queued (ContractNo, [ContractLineNo], SnapshotHash)
+    OUTPUT inserted.Company, inserted.ContractNo, inserted.[ContractLineNo], inserted.SnapshotHash
+        INTO @Queued (Company, ContractNo, [ContractLineNo], SnapshotHash)
     SELECT
-        s.ContractNo, s.[ContractLineNo], s.CargosContractId, s.BranchId, s.BranchEmail,
+        s.Company, s.ContractNo, s.[ContractLineNo], s.CargosContractId, s.BranchId, s.BranchEmail,
         s.ContrattoId, s.ContrattoData, s.ContrattoTipoP,
         s.ContrattoCheckoutData, s.ContrattoCheckoutLuogoCod, s.ContrattoCheckoutIndirizzo,
         s.ContrattoCheckinData, s.ContrattoCheckinLuogoCod, s.ContrattoCheckinIndirizzo,
@@ -1453,7 +1493,8 @@ BEGIN
             f.LastRejectEmailAt,
             f.LastRejectHash
         FROM dbo.Cargos_Contratti_Frontiera f
-        WHERE f.ContractNo = s.ContractNo
+        WHERE f.Company = s.Company
+          AND f.ContractNo = s.ContractNo
           AND f.[ContractLineNo] = s.[ContractLineNo]
         ORDER BY f.CreatedAt DESC, f.Id DESC
     ) lastf
@@ -1462,7 +1503,8 @@ BEGIN
     (
         SELECT 1
         FROM dbo.Cargos_Contratti_Frontiera f
-        WHERE f.ContractNo = s.ContractNo
+        WHERE f.Company = s.Company
+          AND f.ContractNo = s.ContractNo
           AND f.[ContractLineNo] = s.[ContractLineNo]
           AND f.SnapshotHash = s.SnapshotHash
     );
@@ -1474,7 +1516,8 @@ BEGIN
         c.UpdatedAt = @NowUtc
     FROM dbo.Cargos_Contratti c
     INNER JOIN @Queued q
-        ON q.ContractNo = c.ContractNo
+        ON q.Company = c.Company
+       AND q.ContractNo = c.ContractNo
        AND q.[ContractLineNo] = c.[ContractLineNo];
 
     SELECT QueuedItems = COUNT(1)
