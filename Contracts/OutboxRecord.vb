@@ -3,6 +3,7 @@
 Namespace Contracts
     Public NotInheritable Class OutboxRecord
         Public Property Id As Long
+        Public Property Company As String
         Public Property ContractNo As String
         Public Property ContractLineNo As Long
         Public Property CargosContractId As String

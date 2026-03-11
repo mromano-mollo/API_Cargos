@@ -23,7 +23,7 @@ Namespace Persistence
 "    SELECT" & vbCrLf &
 "        f.*," & vbCrLf &
 "        ROW_NUMBER() OVER (" & vbCrLf &
-"            PARTITION BY f.ContractNo, f.ContractLineNo" & vbCrLf &
+"            PARTITION BY f.Company, f.ContractNo, f.ContractLineNo" & vbCrLf &
 "            ORDER BY f.CreatedAt DESC, f.Id DESC" & vbCrLf &
 "        ) AS rn" & vbCrLf &
 "    FROM dbo.Cargos_Contratti_Frontiera f" & vbCrLf &
@@ -45,6 +45,7 @@ Namespace Persistence
 "    UpdatedAt = @NowUtc" & vbCrLf &
 "OUTPUT" & vbCrLf &
 "    inserted.Id," & vbCrLf &
+"    inserted.Company," & vbCrLf &
 "    inserted.ContractNo," & vbCrLf &
 "    inserted.ContractLineNo," & vbCrLf &
 "    inserted.CargosContractId," & vbCrLf &
@@ -290,6 +291,7 @@ Namespace Persistence
         Private Shared Function MapOutboxRecord(reader As SqlDataReader) As OutboxRecord
             Dim item As New OutboxRecord() With {
                 .Id = Convert.ToInt64(reader("Id")),
+                .Company = Convert.ToString(reader("Company")),
                 .ContractNo = Convert.ToString(reader("ContractNo")),
                 .ContractLineNo = Convert.ToInt64(reader("ContractLineNo")),
                 .CargosContractId = Convert.ToString(reader("CargosContractId")),
