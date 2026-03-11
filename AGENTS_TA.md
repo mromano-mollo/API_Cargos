@@ -318,6 +318,9 @@ Validation pipeline:
    - conditional mandatory rules;
    - format rules (dates, numeric patterns, max length);
    - second-driver "all or nothing" consistency.
+3. Lookup/normalization pre-step before final validation:
+   - resolve `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD`;
+   - if resolved citizenship code is not Italy (`100000100`), force `CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD`, `CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD`, and `CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD` to the citizenship code itself instead of resolving them through `LUOGHI`.
 
 Output object:
 - `IsValid As Boolean`
@@ -758,6 +761,7 @@ Notes:
 - [x] Made contract `BranchId` optional in `Cargos_Vista_Contratti` and removed branch-only metadata from `PayloadFingerprint`.
 - [x] Added daily overdue open-rental normalization in `Cargos_Sync_Contratti_Frontiera` before date/payload hashing.
 - [x] Applied `WITH (NOLOCK)` on contract source-view reads only; kept queue/snapshot tables without `NOLOCK`.
+- [x] Added citizenship resolution for `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` and foreign-driver fixed-code override for birth/document/license luogo fields.
 
 ---
 

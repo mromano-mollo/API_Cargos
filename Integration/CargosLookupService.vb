@@ -18,6 +18,7 @@ Namespace Integration
         Private Const LuoghiTableId As Integer = 1
         Private Const TipoVeicoloTableId As Integer = 2
         Private Const TipoDocumentoTableId As Integer = 3
+        Private Const ItaliaCode As String = "100000100"
 
         Private ReadOnly _repository As ICargosReferenceTableRepository
         Private ReadOnly _cache As New Dictionary(Of Integer, IList(Of CargosReferenceTableRow))()
@@ -41,10 +42,18 @@ Namespace Integration
             item.ContrattoCheckinLuogoCod = ResolveValue(LuoghiTableId, item.ContrattoCheckinLuogoCod, "CONTRATTO_CHECKIN_LUOGO_COD", validation)
             item.AgenziaLuogoCod = ResolveValue(LuoghiTableId, item.AgenziaLuogoCod, "AGENZIA_LUOGO_COD", validation)
             item.VeicoloTipo = ResolveValue(TipoVeicoloTableId, item.VeicoloTipo, "VEICOLO_TIPO", validation)
-            item.ConducenteContraenteNascitaLuogoCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteNascitaLuogoCod, "CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD", validation)
+            item.ConducenteContraenteCittadinanzaCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteCittadinanzaCod, "CONDUCENTE_CONTRAENTE_CITTADINANZA_COD", validation)
             item.ConducenteContraenteDocideTipoCod = ResolveValue(TipoDocumentoTableId, item.ConducenteContraenteDocideTipoCod, "CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD", validation)
-            item.ConducenteContraenteDocideLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteDocideLuogorilCod, "CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD", validation)
-            item.ConducenteContraentePatenteLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraentePatenteLuogorilCod, "CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD", validation)
+
+            If IsForeignCitizenshipCode(item.ConducenteContraenteCittadinanzaCod) Then
+                item.ConducenteContraenteNascitaLuogoCod = item.ConducenteContraenteCittadinanzaCod
+                item.ConducenteContraenteDocideLuogorilCod = item.ConducenteContraenteCittadinanzaCod
+                item.ConducenteContraentePatenteLuogorilCod = item.ConducenteContraenteCittadinanzaCod
+            Else
+                item.ConducenteContraenteNascitaLuogoCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteNascitaLuogoCod, "CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD", validation)
+                item.ConducenteContraenteDocideLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraenteDocideLuogorilCod, "CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD", validation)
+                item.ConducenteContraentePatenteLuogorilCod = ResolveValue(LuoghiTableId, item.ConducenteContraentePatenteLuogorilCod, "CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD", validation)
+            End If
         End Sub
 
         Public Function ResolveLuogoCode(city As String, county As String, postCode As String, fallbackValue As String, fieldName As String, validation As ValidationResult) As String Implements ICargosLookupService.ResolveLuogoCode
@@ -223,6 +232,15 @@ Namespace Integration
             Next
 
             Return builder.ToString().Normalize(NormalizationForm.FormC)
+        End Function
+
+        Private Shared Function IsForeignCitizenshipCode(value As String) As Boolean
+            Dim normalized As String = Normalize(value)
+            If String.IsNullOrWhiteSpace(normalized) OrElse normalized = ItaliaCode Then
+                Return False
+            End If
+
+            Return normalized.Length = 9 AndAlso normalized.All(Function(ch) Char.IsDigit(ch))
         End Function
     End Class
 End Namespace

@@ -343,6 +343,7 @@ Fields:
 
 ### Output behavior
 - If invalid: mark outbox `MISSING_DATA` and trigger branch email.
+- Lookup normalization rule: `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` must be resolved before validation; if the resolved code is not Italy (`100000100`), then `CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD`, `CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD`, and `CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD` are forced to the same citizenship code.
 
 ---
 
@@ -598,6 +599,7 @@ Add correlation id per batch to link logs.
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns so rerunning `Cargos_Setup.sql` applies length upgrades correctly.
 - [x] Added daily overdue open-rental normalization: open extracted contracts with past `CONTRATTO_CHECKIN_DATA` are resent with today's effective check-in date once per day.
 - [x] Applied `WITH (NOLOCK)` only on source extraction views where eventual consistency is acceptable; queue/snapshot tables remain without `NOLOCK`.
+- [x] Added citizenship lookup + foreign-driver override rule for birth/document/license luogo codes when citizenship is not Italy (`100000100`).
 
 ---
 

@@ -39,6 +39,7 @@ Namespace Verification
             record.AgenziaLuogoCod = "Roma"
             record.VeicoloTipo = "Autovettura"
             record.ConducenteContraenteNascitaLuogoCod = "Roma"
+            record.ConducenteContraenteCittadinanzaCod = "Italia"
             record.ConducenteContraenteDocideTipoCod = "Carta Identita"
             record.ConducenteContraenteDocideLuogorilCod = "Roma"
             record.ConducenteContraentePatenteLuogorilCod = "Roma"
@@ -50,6 +51,26 @@ Namespace Verification
             AssertTrue(record.ContrattoTipoP = "P", "Lookup should resolve payment type to cached code.")
             AssertTrue(record.VeicoloTipo = "A", "Lookup should resolve vehicle type to cached code.")
             AssertTrue(record.ConducenteContraenteDocideTipoCod = "CI", "Lookup should resolve document type to cached code.")
+            AssertTrue(record.ConducenteContraenteCittadinanzaCod = "100000100", "Lookup should resolve Italian citizenship to cached code.")
+
+            Dim foreignRecord = CreateSampleRecord()
+            foreignRecord.ContrattoCheckoutLuogoCod = "Roma"
+            foreignRecord.ContrattoCheckinLuogoCod = "Roma"
+            foreignRecord.AgenziaLuogoCod = "Roma"
+            foreignRecord.ConducenteContraenteCittadinanzaCod = "FRANCIA"
+            foreignRecord.ConducenteContraenteNascitaLuogoCod = "Roma"
+            foreignRecord.ConducenteContraenteDocideLuogorilCod = "Roma"
+            foreignRecord.ConducenteContraentePatenteLuogorilCod = "Roma"
+            foreignRecord.ConducenteContraenteDocideTipoCod = "Carta Identita"
+
+            Dim foreignValidation As New ValidationResult()
+            service.Resolve(foreignRecord, foreignValidation)
+
+            AssertTrue(foreignValidation.IsValid, "Foreign citizenship normalization should succeed when citizenship resolves. Errors: " & String.Join(" | ", foreignValidation.Errors))
+            AssertTrue(foreignRecord.ConducenteContraenteCittadinanzaCod = "200000250", "Foreign citizenship should resolve to cached code.")
+            AssertTrue(foreignRecord.ConducenteContraenteNascitaLuogoCod = foreignRecord.ConducenteContraenteCittadinanzaCod, "Birth place should be forced to citizenship code for foreign drivers.")
+            AssertTrue(foreignRecord.ConducenteContraenteDocideLuogorilCod = foreignRecord.ConducenteContraenteCittadinanzaCod, "Document release place should be forced to citizenship code for foreign drivers.")
+            AssertTrue(foreignRecord.ConducenteContraentePatenteLuogorilCod = foreignRecord.ConducenteContraenteCittadinanzaCod, "Driving license release place should be forced to citizenship code for foreign drivers.")
 
             Dim luogoValidation As New ValidationResult()
             Dim luogoCode = service.ResolveLuogoCode("Alba", "CN", "12051", String.Empty, "AGENZIA_LUOGO_COD", luogoValidation)
@@ -129,7 +150,9 @@ Namespace Verification
                     Case 1
                         Return New List(Of CargosReferenceTableRow) From {
                             New CargosReferenceTableRow With {.RowNumber = 1, .Code = "405028001", .Description = "ALBA", .Column3 = "CN", .Column4 = "12051", .RawLine = "405028001#ALBA#CN#12051"},
-                            New CargosReferenceTableRow With {.RowNumber = 2, .Code = "405058001", .Description = "ROMA", .Column3 = "RM", .Column4 = "00100", .RawLine = "405058001#ROMA#RM#00100"}
+                            New CargosReferenceTableRow With {.RowNumber = 2, .Code = "405058001", .Description = "ROMA", .Column3 = "RM", .Column4 = "00100", .RawLine = "405058001#ROMA#RM#00100"},
+                            New CargosReferenceTableRow With {.RowNumber = 3, .Code = "100000100", .Description = "ITALIA", .Column3 = "EE", .RawLine = "100000100#ITALIA#EE"},
+                            New CargosReferenceTableRow With {.RowNumber = 4, .Code = "200000250", .Description = "FRANCIA", .Column3 = "EE", .RawLine = "200000250#FRANCIA#EE"}
                         }
                     Case 2
                         Return New List(Of CargosReferenceTableRow) From {
