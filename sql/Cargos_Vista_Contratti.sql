@@ -68,9 +68,12 @@ SELECT HCTR.[Contract No_] AS ContractNo,
   LEFT JOIN BC.dbo.[Mollo Srl$AR Object Card] Obj WITH(NOLOCK)
     ON Obj.[Object No_] = LCTR.No_
 
+  LEFT JOIN BC.dbo.[Mollo Srl$AR Object Type] ObjType WITH(NOLOCK)
+    ON ObjType.[Object No_] = Obj.[Object Type]
+
  WHERE 1 = 1
    AND HCTR.[Contract Type] = 1
    AND HCTR.[Status] = 1
    AND LCTR.Type = 6
    AND LCTR.[Entry Status] = 2
-   AND Obj.[CargosInfo] = 1;
+   AND ObjType.[CargosInfo] = 1
