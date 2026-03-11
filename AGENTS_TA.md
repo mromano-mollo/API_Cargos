@@ -224,6 +224,7 @@ Core fields:
   - `NextRetryAt IS NULL OR NextRetryAt <= NOW`
 - `CHECK_OK` is claimable only when `CheckOnly=False`.
 - `SnapshotHash` should represent the full queue-triggering snapshot, not only checkin/checkout, so the system can requeue a contract after a data fix even if dates stay unchanged.
+- For overdue still-open rentals already extracted by the view, if `CONTRATTO_CHECKIN_DATA < today`, the sync procedure must normalize the effective check-in date to today's local date before computing fingerprints. With the existing date hash logic, this yields at most one `DATE_CHANGE` resend per contract-line per day.
 
 ### CaRGOS fields to send (source: official `TRACCIATO RECORD` / `Dimensione`)
 The following matrix is the current source of truth for validation + record build. Total fixed-width length: `1505`.
@@ -754,6 +755,7 @@ Notes:
 - [x] Realigned `RecordBuilder` and validation limits to the current official `TRACCIATO RECORD` dimensions.
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns to use byte-length semantics during schema upgrades.
 - [x] Made contract `BranchId` optional in `Cargos_Vista_Contratti` and removed branch-only metadata from `PayloadFingerprint`.
+- [x] Added daily overdue open-rental normalization in `Cargos_Sync_Contratti_Frontiera` before date/payload hashing.
 
 ---
 

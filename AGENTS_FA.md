@@ -286,6 +286,7 @@ Fields:
   - `ConducenteContraentePatenteNumero`, `ConducenteContraentePatenteLuogorilCod`
 - `DateFingerprint` (hash/string built from normalized checkin/checkout)
 - `PayloadFingerprint` (hash/string built only from CaRGOS payload fields used by validation/record build; excludes internal metadata like `BranchId` / `BranchEmail`)
+- overdue open-rental rule: if an extracted contract is still open and its planned `CONTRATTO_CHECKIN_DATA` is before today, the sync procedure normalizes the effective check-in date to today before hashing/enqueueing
 - `LastQueuedFingerprint` (hash/string of last enqueued snapshot)
 - `LastQueuedAt` (datetime)
 - `LastSeenAt` (datetime)
@@ -595,6 +596,7 @@ Add correlation id per batch to link logs.
 - [x] Realigned `RecordBuilder` to the current official CaRGOS field dimensions (1505 total, current `TRACCIATO RECORD` layout).
 - [x] Enlarged undersized SQL/app agency fields to avoid truncation before web/API submission (`AgenziaId` internal 50; API validation still 30; name/address/tel aligned to official sizes).
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns so rerunning `Cargos_Setup.sql` applies length upgrades correctly.
+- [x] Added daily overdue open-rental normalization: open extracted contracts with past `CONTRATTO_CHECKIN_DATA` are resent with today's effective check-in date once per day.
 
 ---
 

@@ -1077,6 +1077,7 @@ BEGIN
     END;
 
     DECLARE @NowUtc DATETIME2 = SYSUTCDATETIME();
+    DECLARE @TodayLocalDate DATE = CONVERT(DATE, SYSDATETIME());
     DECLARE @ContractNoExpression NVARCHAR(256);
     DECLARE @ContractLineNoExpression NVARCHAR(256);
     DECLARE @CargosContractIdExpression NVARCHAR(256);
@@ -1221,6 +1222,20 @@ BEGIN
         FROM dbo.Cargos_Vista_Contratti v;';
 
     EXEC sys.sp_executesql @Sql;
+
+    -- Contracts still extracted as open in the source view, but with a planned
+    -- check-in date already in the past, must be resent once per day with today's
+    -- date. We preserve the original time-of-day if present.
+    UPDATE s
+    SET
+        s.ContrattoCheckinData = DATEADD(
+            SECOND,
+            DATEDIFF(SECOND, CAST(s.ContrattoCheckinData AS DATE), s.ContrattoCheckinData),
+            CAST(@TodayLocalDate AS DATETIME2(0))
+        )
+    FROM #SourceContracts s
+    WHERE s.ContrattoCheckinData IS NOT NULL
+      AND CAST(s.ContrattoCheckinData AS DATE) < @TodayLocalDate;
 
     UPDATE s
     SET
