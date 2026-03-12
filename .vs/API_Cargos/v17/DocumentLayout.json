@@ -3,6 +3,18 @@
   "WorkspaceRootPath": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\integration\\cargosreferencetablesyncservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargosreferencetablesyncservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\integration\\cargoswebagencyclient.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargoswebagencyclient.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\module1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:module1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|c:\\users\\m.romano\\programmazione\\programmi\\api_cargos\\orchestration\\cargosprocessor.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:orchestration\\cargosprocessor.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
@@ -11,24 +23,12 @@
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargoslookupservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\module1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:module1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\orchestration\\cargosagencybootstrapprocessor.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:orchestration\\cargosagencybootstrapprocessor.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\integration\\cargoswebagencyclient.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargoswebagencyclient.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\integration\\cargosreferencetablesyncservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargosreferencetablesyncservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\infrastructure\\appsettings.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -50,11 +50,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "CargosLookupService.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosLookupService.vb",
               "RelativeDocumentMoniker": "Integration\\CargosLookupService.vb",
@@ -67,7 +67,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "App.config",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\App.config",
               "RelativeDocumentMoniker": "App.config",
@@ -91,20 +91,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "CargosProcessor.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Orchestration\\CargosProcessor.vb",
               "RelativeDocumentMoniker": "Orchestration\\CargosProcessor.vb",
               "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Orchestration\\CargosProcessor.vb",
               "RelativeToolTip": "Orchestration\\CargosProcessor.vb",
-              "ViewState": "AgIAAEUAAAAAAAAAAAAAwEoAAAA7AAAAAAAAAA==",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAAAGoAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-03-09T13:23:58.568Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 1,
               "Title": "CargosWebAgencyClient.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosWebAgencyClient.vb",
               "RelativeDocumentMoniker": "Integration\\CargosWebAgencyClient.vb",
@@ -112,19 +112,21 @@
               "RelativeToolTip": "Integration\\CargosWebAgencyClient.vb",
               "ViewState": "AgIAAAsAAAAAAAAAAAAjwFYAAABBAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2026-03-09T11:54:26.803Z"
+              "WhenOpened": "2026-03-09T11:54:26.803Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 0,
               "Title": "CargosReferenceTableSyncService.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosReferenceTableSyncService.vb",
               "RelativeDocumentMoniker": "Integration\\CargosReferenceTableSyncService.vb",
               "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosReferenceTableSyncService.vb",
               "RelativeToolTip": "Integration\\CargosReferenceTableSyncService.vb",
-              "ViewState": "AgIAAAwAAAAAAAAAAAAhwDUAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAABkAAAAAAAAAAIAwwDUAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2026-03-09T08:54:37.235Z"
+              "WhenOpened": "2026-03-09T08:54:37.235Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -140,7 +142,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "CargosAgencyBootstrapProcessor.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Orchestration\\CargosAgencyBootstrapProcessor.vb",
               "RelativeDocumentMoniker": "Orchestration\\CargosAgencyBootstrapProcessor.vb",
@@ -170,7 +172,7 @@
               "RelativeDocumentMoniker": "Module1.vb",
               "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Module1.vb",
               "RelativeToolTip": "Module1.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAEAAAAAAAAAA==",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAQwGYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-03-06T08:06:28.84Z",
               "EditorCaption": ""
