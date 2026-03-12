@@ -1351,6 +1351,8 @@ BEGIN
             CASE
                 WHEN c.ContractNo IS NULL OR c.LastQueuedFingerprint IS NULL THEN 'INITIAL_SEND'
                 WHEN ISNULL(c.DateFingerprint, '') <> ISNULL(s.DateFingerprint, '') THEN 'DATE_CHANGE'
+                WHEN ISNULL(c.ContrattoCheckoutLuogoCod, '') <> ISNULL(s.ContrattoCheckoutLuogoCod, '')
+                  OR ISNULL(c.ContrattoCheckinLuogoCod, '') <> ISNULL(s.ContrattoCheckinLuogoCod, '') THEN 'LOCATION_CHANGE'
                 WHEN ISNULL(c.LastQueuedFingerprint, '') <> ISNULL(s.SnapshotHash, '')
                      AND ISNULL(lastf.Status, '') <> 'SENT_OK' THEN 'DATA_FIX'
                 ELSE NULL

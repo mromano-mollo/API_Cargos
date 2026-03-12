@@ -66,8 +66,10 @@ This document is written to enable an AI coding agent (Codex) to implement the s
 - The service must not send the same contract snapshot twice.
 - Implement internal tracking tables where queue idempotency is keyed by `Company + ContractNo + ContractLineNo + SnapshotHash`.
 
-### FR-07 - Re-send when contract date fields change
-- If `CONTRATTO_CHECKIN_DATA` or `CONTRATTO_CHECKOUT_DATA` changes for an already processed contract, the service must send a new call to CaRGOS with updated data.
+### FR-07 - Re-send when contract data changes
+- If `CONTRATTO_CHECKIN_DATA` or `CONTRATTO_CHECKOUT_DATA` changes for an already processed contract, the service must send a new call to CaRGOS with updated data. Date changes are detected through `DateFingerprint`, which is built from normalized `CONTRATTO_CHECKIN_DATA` and `CONTRATTO_CHECKOUT_DATA`.
+- If an extracted contract is still open and its planned `CONTRATTO_CHECKIN_DATA` is before today, the sync procedure must normalize the effective check-in date to today before hashing/enqueueing. This produces at most one daily resend for that still-open contract-line.
+- If `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes for an already processed contract-line, the service must enqueue a new resend even when the last snapshot was already `SENT_OK`. Luogo-code changes are tracked with queue reason `LOCATION_CHANGE`.
 - The new call must be tracked as a new queue item, while preserving history of previous attempts/results.
 
 ### FR-07B - Reprocess when data is fixed
@@ -79,7 +81,7 @@ This document is written to enable an AI coding agent (Codex) to implement the s
   1) execute sync procedure `Cargos_Sync_Contratti_Frontiera`;
   2) procedure extracts current eligible contracts from `Cargos_Vista_Contratti`;
   3) procedure upserts contract snapshot state in internal table `Cargos_Contratti`;
-  4) if a new contract is found, checkin/checkout values changed, or blocked/rejected payload data was corrected, procedure inserts a new pending item into `Cargos_Contratti_Frontiera`.
+  4) if a new contract is found, checkin/checkout values changed, checkin/checkout luogo codes changed, or blocked/rejected payload data was corrected, procedure inserts a new pending item into `Cargos_Contratti_Frontiera`.
 
 ---
 
@@ -287,7 +289,6 @@ Fields:
   - `ConducenteContraentePatenteNumero`, `ConducenteContraentePatenteLuogorilCod`
 - `DateFingerprint` (hash/string built from normalized checkin/checkout)
 - `PayloadFingerprint` (hash/string built only from CaRGOS payload fields used by validation/record build; excludes internal metadata like `BranchId` / `BranchEmail`)
-- overdue open-rental rule: if an extracted contract is still open and its planned `CONTRATTO_CHECKIN_DATA` is before today, the sync procedure normalizes the effective check-in date to today before hashing/enqueueing
 - `LastQueuedFingerprint` (hash/string of last enqueued snapshot)
 - `LastQueuedAt` (datetime)
 - `LastSeenAt` (datetime)
@@ -302,7 +303,7 @@ Fields:
 - `CargosContractId` (value used in CaRGOS record, if different)
 - `BranchId` (optional internal metadata)
 - Same mandatory CaRGOS payload columns listed for `Cargos_Contratti` (snapshot at queue creation time)
-- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
+- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `LOCATION_CHANGE` | `DATA_FIX`)
 - `SnapshotHash` (hash/string of snapshot used for this send item)
 - `Status` (string/enum):
   - `PENDING`
@@ -602,6 +603,7 @@ Add correlation id per batch to link logs.
 - [x] Added daily overdue open-rental normalization: open extracted contracts with past `CONTRATTO_CHECKIN_DATA` are resent with today's effective check-in date once per day.
 - [x] Applied `WITH (NOLOCK)` only on source extraction views where eventual consistency is acceptable; queue/snapshot tables remain without `NOLOCK`.
 - [x] Added citizenship lookup + foreign-driver override rule for birth/document/license luogo codes when citizenship is not Italy (`100000100`).
+- [x] Added explicit resend rule for `CONTRATTO_CHECKOUT_LUOGO_COD` / `CONTRATTO_CHECKIN_LUOGO_COD` changes using queue reason `LOCATION_CHANGE`, even after a previous `SENT_OK`.
 
 ---
 

@@ -11,6 +11,10 @@
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:module1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|c:\\users\\m.romano\\programmazione\\programmi\\api_cargos\\integration\\cargoslookupservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:integration\\cargoslookupservice.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
       "RelativeMoniker": "D:0:0:{BB25ED23-80DE-4E21-BCDD-B45597C8F9BA}|API_Cargos.vbproj|solutionrelative:app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
@@ -46,11 +50,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "CargosLookupService.vb",
+              "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosLookupService.vb",
+              "RelativeDocumentMoniker": "Integration\\CargosLookupService.vb",
+              "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosLookupService.vb",
+              "RelativeToolTip": "Integration\\CargosLookupService.vb",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAADYAAACyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
+              "WhenOpened": "2026-03-11T14:15:47.147Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "App.config",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\App.config",
               "RelativeDocumentMoniker": "App.config",
@@ -62,7 +79,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "AppSettings.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Infrastructure\\AppSettings.vb",
               "RelativeDocumentMoniker": "Infrastructure\\AppSettings.vb",
@@ -80,14 +97,14 @@
               "RelativeDocumentMoniker": "Orchestration\\CargosProcessor.vb",
               "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Orchestration\\CargosProcessor.vb",
               "RelativeToolTip": "Orchestration\\CargosProcessor.vb",
-              "ViewState": "AgIAACQAAAAAAAAAAAAqwDQAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAAFIAAAAAAAAAAAAAwGcAAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-03-09T13:23:58.568Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "CargosWebAgencyClient.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosWebAgencyClient.vb",
               "RelativeDocumentMoniker": "Integration\\CargosWebAgencyClient.vb",
@@ -99,7 +116,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "CargosReferenceTableSyncService.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Integration\\CargosReferenceTableSyncService.vb",
               "RelativeDocumentMoniker": "Integration\\CargosReferenceTableSyncService.vb",
@@ -111,7 +128,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "SqlAgencyFrontieraRepository.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Persistence\\SqlAgencyFrontieraRepository.vb",
               "RelativeDocumentMoniker": "Persistence\\SqlAgencyFrontieraRepository.vb",
@@ -123,7 +140,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "CargosAgencyBootstrapProcessor.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Orchestration\\CargosAgencyBootstrapProcessor.vb",
               "RelativeDocumentMoniker": "Orchestration\\CargosAgencyBootstrapProcessor.vb",
@@ -135,7 +152,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "SqlAgencySyncRepository.vb",
               "DocumentMoniker": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Persistence\\SqlAgencySyncRepository.vb",
               "RelativeDocumentMoniker": "Persistence\\SqlAgencySyncRepository.vb",
@@ -153,7 +170,7 @@
               "RelativeDocumentMoniker": "Module1.vb",
               "ToolTip": "C:\\Users\\m.romano\\Programmazione\\programmi\\API_Cargos\\Module1.vb",
               "RelativeToolTip": "Module1.vb",
-              "ViewState": "AgIAAFsAAAAAAAAAAAAAAGkAAAAUAAAAAAAAAA==",
+              "ViewState": "AgIAAFgAAAAAAAAAAAAAwGkAAAAUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-03-06T08:06:28.84Z",
               "EditorCaption": ""

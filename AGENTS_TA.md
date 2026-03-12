@@ -162,7 +162,7 @@ Core fields:
 - `CargosContractId`
 - `BranchId` optional internal metadata only
 - same mandatory payload columns copied from snapshot at enqueue time
-- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `DATA_FIX`)
+- `Reason` (`INITIAL_SEND` | `DATE_CHANGE` | `LOCATION_CHANGE` | `DATA_FIX`)
 - `SnapshotHash`
 - `Status`
 - `MissingFields`
@@ -225,6 +225,7 @@ Core fields:
 - `CHECK_OK` is claimable only when `CheckOnly=False`.
 - `SnapshotHash` should represent the full queue-triggering snapshot, not only checkin/checkout, so the system can requeue a contract after a data fix even if dates stay unchanged.
 - For overdue still-open rentals already extracted by the view, if `CONTRATTO_CHECKIN_DATA < today`, the sync procedure must normalize the effective check-in date to today's local date before computing fingerprints. With the existing date hash logic, this yields at most one `DATE_CHANGE` resend per contract-line per day.
+- If `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes for an already processed contract-line, the sync procedure must enqueue a new `LOCATION_CHANGE` item even if the last status was already `SENT_OK`.
 
 ### CaRGOS fields to send (source: official `TRACCIATO RECORD` / `Dimensione`)
 The following matrix is the current source of truth for validation + record build. Total fixed-width length: `1505`.
@@ -614,7 +615,7 @@ CREATE TABLE dbo.Cargos_Contratti_Frontiera (
     CargosContractId NVARCHAR(50) NOT NULL,
     BranchId NVARCHAR(50) NOT NULL, -- optional metadata; empty allowed if source view does not expose it
     -- same mandatory CaRGOS payload columns snapshot
-    Reason NVARCHAR(30) NOT NULL, -- INITIAL_SEND | DATE_CHANGE | DATA_FIX
+    Reason NVARCHAR(30) NOT NULL, -- INITIAL_SEND | DATE_CHANGE | LOCATION_CHANGE | DATA_FIX
     SnapshotHash NVARCHAR(128) NOT NULL,
     Status NVARCHAR(30) NOT NULL,
     MissingFields NVARCHAR(MAX) NULL,
@@ -765,6 +766,7 @@ Notes:
 - [x] Applied `WITH (NOLOCK)` on contract source-view reads only; kept queue/snapshot tables without `NOLOCK`.
 - [x] Added citizenship resolution for `CONDUCENTE_CONTRAENTE_CITTADINANZA_COD` and foreign-driver fixed-code override for birth/document/license luogo fields.
 - [x] Added multi-company contract partitioning with `Company` as part of the snapshot/outbox identity and queue idempotency key; sync defaults to `MOLLO` when the source view does not expose `Company` yet.
+- [x] Added explicit `LOCATION_CHANGE` resend logic when `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes after a previously processed snapshot.
 
 ---
 
