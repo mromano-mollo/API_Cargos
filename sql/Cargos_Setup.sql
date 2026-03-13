@@ -978,6 +978,87 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_Agenzie', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Agenzie_Frontiera', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Contratti', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NOT NULL
+BEGIN
+    DECLARE @LocalDatetimeDefaults TABLE
+    (
+        TableName SYSNAME NOT NULL,
+        ColumnName SYSNAME NOT NULL,
+        ConstraintName SYSNAME NOT NULL
+    );
+
+    INSERT INTO @LocalDatetimeDefaults (TableName, ColumnName, ConstraintName)
+    VALUES
+        (N'dbo.Cargos_Agenzie', N'LastSeenAt', N'DF_Cargos_Agenzie_LastSeenAt'),
+        (N'dbo.Cargos_Agenzie', N'CreatedAt', N'DF_Cargos_Agenzie_CreatedAt'),
+        (N'dbo.Cargos_Agenzie', N'UpdatedAt', N'DF_Cargos_Agenzie_UpdatedAt'),
+        (N'dbo.Cargos_Agenzie_Frontiera', N'CreatedAt', N'DF_Cargos_Agenzie_Frontiera_CreatedAt'),
+        (N'dbo.Cargos_Agenzie_Frontiera', N'UpdatedAt', N'DF_Cargos_Agenzie_Frontiera_UpdatedAt'),
+        (N'dbo.Cargos_Contratti', N'LastSeenAt', N'DF_Cargos_Contratti_LastSeenAt'),
+        (N'dbo.Cargos_Contratti', N'CreatedAt', N'DF_Cargos_Contratti_CreatedAt'),
+        (N'dbo.Cargos_Contratti', N'UpdatedAt', N'DF_Cargos_Contratti_UpdatedAt'),
+        (N'dbo.Cargos_Contratti_Frontiera', N'CreatedAt', N'DF_Cargos_Contratti_Frontiera_CreatedAt'),
+        (N'dbo.Cargos_Contratti_Frontiera', N'UpdatedAt', N'DF_Cargos_Contratti_Frontiera_UpdatedAt'),
+        (N'dbo.Cargos_Tabella', N'CreatedAt', N'DF_Cargos_Tabella_CreatedAt'),
+        (N'dbo.Cargos_Tabella', N'UpdatedAt', N'DF_Cargos_Tabella_UpdatedAt'),
+        (N'dbo.Cargos_Tabella_Righe', N'SyncedAt', N'DF_Cargos_Tabella_Righe_SyncedAt'),
+        (N'dbo.Cargos_Tabella_Righe', N'CreatedAt', N'DF_Cargos_Tabella_Righe_CreatedAt'),
+        (N'dbo.Cargos_Tabella_Righe', N'UpdatedAt', N'DF_Cargos_Tabella_Righe_UpdatedAt');
+
+    DECLARE
+        @DefaultTableName SYSNAME,
+        @DefaultColumnName SYSNAME,
+        @DefaultConstraintName SYSNAME,
+        @ExistingDefaultName SYSNAME,
+        @DefaultSql NVARCHAR(MAX);
+
+    DECLARE DefaultCursor CURSOR LOCAL FAST_FORWARD FOR
+        SELECT TableName, ColumnName, ConstraintName
+        FROM @LocalDatetimeDefaults;
+
+    OPEN DefaultCursor;
+    FETCH NEXT FROM DefaultCursor INTO @DefaultTableName, @DefaultColumnName, @DefaultConstraintName;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        IF OBJECT_ID(@DefaultTableName, N'U') IS NOT NULL
+           AND COL_LENGTH(@DefaultTableName, @DefaultColumnName) IS NOT NULL
+        BEGIN
+            SELECT @ExistingDefaultName = dc.name
+            FROM sys.default_constraints dc
+            INNER JOIN sys.columns c
+                ON c.object_id = dc.parent_object_id
+               AND c.column_id = dc.parent_column_id
+            WHERE dc.parent_object_id = OBJECT_ID(@DefaultTableName)
+              AND c.name = @DefaultColumnName;
+
+            IF @ExistingDefaultName IS NOT NULL
+            BEGIN
+                SET @DefaultSql = N'ALTER TABLE ' + @DefaultTableName + N' DROP CONSTRAINT ' + QUOTENAME(@ExistingDefaultName) + N';';
+                EXEC sys.sp_executesql @DefaultSql;
+            END;
+
+            SET @DefaultSql =
+                N'ALTER TABLE ' + @DefaultTableName +
+                N' ADD CONSTRAINT ' + QUOTENAME(@DefaultConstraintName) +
+                N' DEFAULT (SYSDATETIME()) FOR ' + QUOTENAME(@DefaultColumnName) + N';';
+            EXEC sys.sp_executesql @DefaultSql;
+        END;
+
+        SET @ExistingDefaultName = NULL;
+        FETCH NEXT FROM DefaultCursor INTO @DefaultTableName, @DefaultColumnName, @DefaultConstraintName;
+    END;
+
+    CLOSE DefaultCursor;
+    DEALLOCATE DefaultCursor;
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
 BEGIN
     MERGE dbo.Cargos_Tabella AS tgt
@@ -1526,4 +1607,3 @@ BEGIN
     FROM @Queued;
 END;
 GO
-

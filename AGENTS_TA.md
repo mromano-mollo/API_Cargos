@@ -771,6 +771,7 @@ Notes:
 - [x] Added explicit `LOCATION_CHANGE` resend logic when `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes after a previously processed snapshot.
 - [x] Corrected CaRGOS line-response parsing to detect `esito=false` inside HTTP `200` and flatten nested `errore.error` + `errore.error_description` into `LastError`.
 - [x] Switched `Cargos_*` table timestamps, retry scheduling, claim timeouts, and SQL defaults/procedures from UTC to local server datetime.
+- [x] Added an explicit SQL migration block that refreshes existing datetime default constraints on `Cargos_*` tables to `SYSDATETIME()`, because altering script text alone does not update already-bound defaults.
 
 ---
 

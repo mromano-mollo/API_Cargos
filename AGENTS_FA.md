@@ -608,6 +608,7 @@ Add correlation id per batch to link logs.
 - [x] Added explicit resend rule for `CONTRATTO_CHECKOUT_LUOGO_COD` / `CONTRATTO_CHECKIN_LUOGO_COD` changes using queue reason `LOCATION_CHANGE`, even after a previous `SENT_OK`.
 - [x] Corrected CaRGOS line-response parsing so HTTP `200` with `esito=false` is stored as `SENT_KO_DATA` and `LastError` uses nested `errore.error + errore.error_description`.
 - [x] Switched `Cargos_*` table timestamps and worker comparisons from UTC to local server datetime (`DateTime.Now` / `SYSDATETIME`).
+- [x] Added SQL migration logic to drop/recreate existing datetime default constraints on `Cargos_*` tables, so rerunning `Cargos_Setup.sql` also fixes already-created tables.
 
 ---
 
