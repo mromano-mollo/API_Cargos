@@ -61,4 +61,7 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_esito_false_fix\
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_esito_false_fix\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_esito_false_fix\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_esito_false_fix\API_Cargos.xml
-C:\Users\m.romano\Programmazione\programmi\API_Cargos\obj\Debug\API_Cargos.exe.config
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_localtime_fix\API_Cargos.exe.config
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_localtime_fix\API_Cargos.exe
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_localtime_fix\API_Cargos.pdb
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_localtime_fix\API_Cargos.xml

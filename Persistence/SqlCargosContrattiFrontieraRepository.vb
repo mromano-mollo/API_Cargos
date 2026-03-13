@@ -16,7 +16,7 @@ Namespace Persistence
         Public Function ClaimEligible(maxItems As Integer, workerId As String, claimTimeoutMinutes As Integer, includeCheckOk As Boolean) As IList(Of OutboxRecord) Implements ICargosContrattiFrontieraRepository.ClaimEligible
             Dim items As New List(Of OutboxRecord)()
             Dim take As Integer = Math.Max(1, maxItems)
-            Dim staleBeforeUtc As DateTime = DateTime.UtcNow.AddMinutes(-Math.Max(1, claimTimeoutMinutes))
+            Dim staleBeforeLocal As DateTime = DateTime.Now.AddMinutes(-Math.Max(1, claimTimeoutMinutes))
 
             Const sql As String =
 ";WITH Latest AS (" & vbCrLf &
@@ -35,14 +35,14 @@ Namespace Persistence
 "            l.Status IN ('PENDING', 'READY_TO_SEND', 'SENT_KO_RETRY')" & vbCrLf &
 "            OR (@IncludeCheckOk = 1 AND l.Status = 'CHECK_OK')" & vbCrLf &
 "          )" & vbCrLf &
-"      AND (l.NextRetryAt IS NULL OR l.NextRetryAt <= @NowUtc)" & vbCrLf &
-"      AND (l.ClaimedAt IS NULL OR l.ClaimedAt <= @StaleBeforeUtc)" & vbCrLf &
+"      AND (l.NextRetryAt IS NULL OR l.NextRetryAt <= @NowLocal)" & vbCrLf &
+"      AND (l.ClaimedAt IS NULL OR l.ClaimedAt <= @StaleBeforeLocal)" & vbCrLf &
 "    ORDER BY l.CreatedAt, l.Id" & vbCrLf &
 ")" & vbCrLf &
 "UPDATE f" & vbCrLf &
 "SET ClaimedBy = @WorkerId," & vbCrLf &
-"    ClaimedAt = @NowUtc," & vbCrLf &
-"    UpdatedAt = @NowUtc" & vbCrLf &
+"    ClaimedAt = @NowLocal," & vbCrLf &
+"    UpdatedAt = @NowLocal" & vbCrLf &
 "OUTPUT" & vbCrLf &
 "    inserted.Id," & vbCrLf &
 "    inserted.Company," & vbCrLf &
@@ -106,8 +106,8 @@ Namespace Persistence
                     command.Parameters.Add("@Take", SqlDbType.Int).Value = take
                     command.Parameters.Add("@WorkerId", SqlDbType.NVarChar, 100).Value = workerId
                     command.Parameters.Add("@IncludeCheckOk", SqlDbType.Bit).Value = includeCheckOk
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
-                    command.Parameters.Add("@StaleBeforeUtc", SqlDbType.DateTime2).Value = staleBeforeUtc
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
+                    command.Parameters.Add("@StaleBeforeLocal", SqlDbType.DateTime2).Value = staleBeforeLocal
 
                     Using reader As SqlDataReader = command.ExecuteReader()
                         While reader.Read()
@@ -124,12 +124,12 @@ Namespace Persistence
             ExecuteNonQuery(
                 "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
                 "SET AttemptCount = AttemptCount + 1," & vbCrLf &
-                "    LastAttemptAt = @NowUtc," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    LastAttemptAt = @NowLocal," & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -141,12 +141,12 @@ Namespace Persistence
                 "    RecordLine = @RecordLine," & vbCrLf &
                 "    MissingFields = NULL," & vbCrLf &
                 "    LastError = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@RecordLine", SqlDbType.NVarChar, -1).Value = If(recordLine, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -160,13 +160,13 @@ Namespace Persistence
                 "    NextRetryAt = NULL," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
                 "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@MissingFields", SqlDbType.NVarChar, -1).Value = String.Join(",", missingFields)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -178,11 +178,11 @@ Namespace Persistence
                 "    LastError = NULL," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
                 "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -197,12 +197,12 @@ Namespace Persistence
                 "    NextRetryAt = NULL," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
                 "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@TransactionId", SqlDbType.NVarChar, 100).Value = If(transactionId, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -215,12 +215,12 @@ Namespace Persistence
                 "    NextRetryAt = NULL," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
                 "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -233,13 +233,13 @@ Namespace Persistence
                 "    NextRetryAt = @NextRetryAt," & vbCrLf &
                 "    ClaimedBy = NULL," & vbCrLf &
                 "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
                     command.Parameters.Add("@NextRetryAt", SqlDbType.DateTime2).Value = nextRetryAt
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -247,14 +247,14 @@ Namespace Persistence
         Public Sub MarkMissingEmailSent(itemId As Long, missingFieldsHash As String) Implements ICargosContrattiFrontieraRepository.MarkMissingEmailSent
             ExecuteNonQuery(
                 "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET LastMissingEmailAt = @NowUtc," & vbCrLf &
+                "SET LastMissingEmailAt = @NowLocal," & vbCrLf &
                 "    LastMissingFieldsHash = @DetailHash," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@DetailHash", SqlDbType.NVarChar, 128).Value = If(missingFieldsHash, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
@@ -262,14 +262,14 @@ Namespace Persistence
         Public Sub MarkRejectEmailSent(itemId As Long, rejectHash As String) Implements ICargosContrattiFrontieraRepository.MarkRejectEmailSent
             ExecuteNonQuery(
                 "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET LastRejectEmailAt = @NowUtc," & vbCrLf &
+                "SET LastRejectEmailAt = @NowLocal," & vbCrLf &
                 "    LastRejectHash = @DetailHash," & vbCrLf &
-                "    UpdatedAt = @NowUtc" & vbCrLf &
+                "    UpdatedAt = @NowLocal" & vbCrLf &
                 "WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@DetailHash", SqlDbType.NVarChar, 128).Value = If(rejectHash, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub

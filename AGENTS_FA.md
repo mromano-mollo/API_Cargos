@@ -326,6 +326,7 @@ Fields:
 - A queue item is eligible for processing only if status in `{PENDING, READY_TO_SEND, SENT_KO_RETRY}`.
 - `CHECK_OK` is a parked state used when `CheckOnly=True`; it must not be rechecked in check-only mode, but it can be picked later for real send when check-only mode is disabled.
 - Prevent duplicate queue creation for same contract snapshot using unique key `(Company, ContractNo, ContractLineNo, SnapshotHash)`.
+- All timestamps persisted in `Cargos_*` tables use local server datetime, not UTC.
 
 ---
 
@@ -606,6 +607,7 @@ Add correlation id per batch to link logs.
 - [x] Added citizenship lookup + foreign-driver override rule for birth/document/license luogo codes when citizenship is not Italy (`100000100`).
 - [x] Added explicit resend rule for `CONTRATTO_CHECKOUT_LUOGO_COD` / `CONTRATTO_CHECKIN_LUOGO_COD` changes using queue reason `LOCATION_CHANGE`, even after a previous `SENT_OK`.
 - [x] Corrected CaRGOS line-response parsing so HTTP `200` with `esito=false` is stored as `SENT_KO_DATA` and `LastError` uses nested `errore.error + errore.error_description`.
+- [x] Switched `Cargos_*` table timestamps and worker comparisons from UTC to local server datetime (`DateTime.Now` / `SYSDATETIME`).
 
 ---
 

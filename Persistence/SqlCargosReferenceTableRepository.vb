@@ -1,4 +1,4 @@
-﻿Imports System.Data.SqlClient
+Imports System.Data.SqlClient
 Imports API_Cargos.Contracts
 
 Namespace Persistence
@@ -61,7 +61,7 @@ Namespace Persistence
             Return rows
         End Function
 
-        Public Sub ReplaceTable(definition As CargosReferenceTableDefinition, rows As IList(Of CargosReferenceTableRow), syncedAtUtc As DateTime) Implements ICargosReferenceTableRepository.ReplaceTable
+        Public Sub ReplaceTable(definition As CargosReferenceTableDefinition, rows As IList(Of CargosReferenceTableRow), syncedAtLocal As DateTime) Implements ICargosReferenceTableRepository.ReplaceTable
             If definition Is Nothing Then
                 Throw New ArgumentNullException(NameOf(definition))
             End If
@@ -74,15 +74,15 @@ Namespace Persistence
                 connection.Open()
 
                 Using transaction = connection.BeginTransaction()
-                    UpsertTableMetadata(connection, transaction, definition, syncedAtUtc, rows.Count)
+                    UpsertTableMetadata(connection, transaction, definition, syncedAtLocal, rows.Count)
                     DeleteExistingRows(connection, transaction, definition.TableId)
-                    InsertRows(connection, transaction, definition.TableId, rows, syncedAtUtc)
+                    InsertRows(connection, transaction, definition.TableId, rows, syncedAtLocal)
                     transaction.Commit()
                 End Using
             End Using
         End Sub
 
-        Public Sub MarkSyncFailure(definition As CargosReferenceTableDefinition, failureMessage As String, attemptedAtUtc As DateTime) Implements ICargosReferenceTableRepository.MarkSyncFailure
+        Public Sub MarkSyncFailure(definition As CargosReferenceTableDefinition, failureMessage As String, attemptedAtLocal As DateTime) Implements ICargosReferenceTableRepository.MarkSyncFailure
             If definition Is Nothing Then
                 Throw New ArgumentNullException(NameOf(definition))
             End If
@@ -96,10 +96,10 @@ Namespace Persistence
 "        tgt.TableName = src.TableName," & vbCrLf &
 "        tgt.LastSyncStatus = 'FAILED'," & vbCrLf &
 "        tgt.LastSyncError = @FailureMessage," & vbCrLf &
-"        tgt.UpdatedAt = @AttemptedAtUtc" & vbCrLf &
+"        tgt.UpdatedAt = @AttemptedAtLocal" & vbCrLf &
 "WHEN NOT MATCHED THEN" & vbCrLf &
 "    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, SyncedRowCount, CreatedAt, UpdatedAt)" & vbCrLf &
-"    VALUES (src.TableId, src.TableName, NULL, 'FAILED', @FailureMessage, 0, @AttemptedAtUtc, @AttemptedAtUtc);"
+"    VALUES (src.TableId, src.TableName, NULL, 'FAILED', @FailureMessage, 0, @AttemptedAtLocal, @AttemptedAtLocal);"
 
             Using connection As New SqlConnection(_connectionString)
                 connection.Open()
@@ -109,13 +109,13 @@ Namespace Persistence
                     command.Parameters.Add("@TableId", SqlDbType.Int).Value = definition.TableId
                     command.Parameters.Add("@TableName", SqlDbType.NVarChar, 50).Value = definition.TableName
                     command.Parameters.Add("@FailureMessage", SqlDbType.NVarChar, -1).Value = If(failureMessage, String.Empty)
-                    command.Parameters.Add("@AttemptedAtUtc", SqlDbType.DateTime2).Value = attemptedAtUtc
+                    command.Parameters.Add("@AttemptedAtLocal", SqlDbType.DateTime2).Value = attemptedAtLocal
                     command.ExecuteNonQuery()
                 End Using
             End Using
         End Sub
 
-        Private Sub UpsertTableMetadata(connection As SqlConnection, transaction As SqlTransaction, definition As CargosReferenceTableDefinition, syncedAtUtc As DateTime, rowCount As Integer)
+        Private Sub UpsertTableMetadata(connection As SqlConnection, transaction As SqlTransaction, definition As CargosReferenceTableDefinition, syncedAtLocal As DateTime, rowCount As Integer)
             Const sql As String =
 "MERGE dbo.Cargos_Tabella AS tgt" & vbCrLf &
 "USING (SELECT @TableId AS TableId, @TableName AS TableName) AS src" & vbCrLf &
@@ -123,20 +123,20 @@ Namespace Persistence
 "WHEN MATCHED THEN" & vbCrLf &
 "    UPDATE SET" & vbCrLf &
 "        tgt.TableName = src.TableName," & vbCrLf &
-"        tgt.LastSyncedAt = @SyncedAtUtc," & vbCrLf &
+"        tgt.LastSyncedAt = @SyncedAtLocal," & vbCrLf &
 "        tgt.LastSyncStatus = 'OK'," & vbCrLf &
 "        tgt.LastSyncError = NULL," & vbCrLf &
 "        tgt.SyncedRowCount = @SyncedRowCount," & vbCrLf &
-"        tgt.UpdatedAt = @SyncedAtUtc" & vbCrLf &
+"        tgt.UpdatedAt = @SyncedAtLocal" & vbCrLf &
 "WHEN NOT MATCHED THEN" & vbCrLf &
 "    INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, SyncedRowCount, CreatedAt, UpdatedAt)" & vbCrLf &
-"    VALUES (src.TableId, src.TableName, @SyncedAtUtc, 'OK', NULL, @SyncedRowCount, @SyncedAtUtc, @SyncedAtUtc);"
+"    VALUES (src.TableId, src.TableName, @SyncedAtLocal, 'OK', NULL, @SyncedRowCount, @SyncedAtLocal, @SyncedAtLocal);"
 
             Using command As New SqlCommand(sql, connection, transaction)
                 command.CommandTimeout = _commandTimeoutSeconds
                 command.Parameters.Add("@TableId", SqlDbType.Int).Value = definition.TableId
                 command.Parameters.Add("@TableName", SqlDbType.NVarChar, 50).Value = definition.TableName
-                command.Parameters.Add("@SyncedAtUtc", SqlDbType.DateTime2).Value = syncedAtUtc
+                command.Parameters.Add("@SyncedAtLocal", SqlDbType.DateTime2).Value = syncedAtLocal
                 command.Parameters.Add("@SyncedRowCount", SqlDbType.Int).Value = rowCount
                 command.ExecuteNonQuery()
             End Using
@@ -152,7 +152,7 @@ Namespace Persistence
             End Using
         End Sub
 
-        Private Sub InsertRows(connection As SqlConnection, transaction As SqlTransaction, tableId As Integer, rows As IList(Of CargosReferenceTableRow), syncedAtUtc As DateTime)
+        Private Sub InsertRows(connection As SqlConnection, transaction As SqlTransaction, tableId As Integer, rows As IList(Of CargosReferenceTableRow), syncedAtLocal As DateTime)
             Const sql As String =
 "INSERT INTO dbo.Cargos_Tabella_Righe" & vbCrLf &
 "(" & vbCrLf &
@@ -160,7 +160,7 @@ Namespace Persistence
 ")" & vbCrLf &
 "VALUES" & vbCrLf &
 "(" & vbCrLf &
-"    @TableId, @RowNumber, @Code, @Description, @Column3, @Column4, @Column5, @Column6, @Column7, @Column8, @RawLine, @SyncedAtUtc, @SyncedAtUtc, @SyncedAtUtc" & vbCrLf &
+"    @TableId, @RowNumber, @Code, @Description, @Column3, @Column4, @Column5, @Column6, @Column7, @Column8, @RawLine, @SyncedAtLocal, @SyncedAtLocal, @SyncedAtLocal" & vbCrLf &
 ");"
 
             For Each row In rows
@@ -177,10 +177,11 @@ Namespace Persistence
                     command.Parameters.Add("@Column7", SqlDbType.NVarChar, 255).Value = If(row.Column7, String.Empty)
                     command.Parameters.Add("@Column8", SqlDbType.NVarChar, 255).Value = If(row.Column8, String.Empty)
                     command.Parameters.Add("@RawLine", SqlDbType.NVarChar, 2000).Value = If(row.RawLine, String.Empty)
-                    command.Parameters.Add("@SyncedAtUtc", SqlDbType.DateTime2).Value = syncedAtUtc
+                    command.Parameters.Add("@SyncedAtLocal", SqlDbType.DateTime2).Value = syncedAtLocal
                     command.ExecuteNonQuery()
                 End Using
             Next
         End Sub
     End Class
 End Namespace
+

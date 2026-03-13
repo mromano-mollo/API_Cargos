@@ -15,7 +15,7 @@ Namespace Persistence
 
         Public Function ClaimEligible(maxItems As Integer, workerId As String, claimTimeoutMinutes As Integer) As IList(Of AgencyOutboxRecord) Implements IAgencyFrontieraRepository.ClaimEligible
             Dim items As New List(Of AgencyOutboxRecord)()
-            Dim staleBeforeUtc As DateTime = DateTime.UtcNow.AddMinutes(-Math.Max(1, claimTimeoutMinutes))
+            Dim staleBeforeLocal As DateTime = DateTime.Now.AddMinutes(-Math.Max(1, claimTimeoutMinutes))
 
             Const sql As String =
 ";WITH Latest AS (" & vbCrLf &
@@ -27,14 +27,14 @@ Namespace Persistence
 "    FROM Latest l" & vbCrLf &
 "    WHERE l.rn = 1" & vbCrLf &
 "      AND l.Status IN ('PENDING', 'READY_TO_SEND', 'SENT_KO_RETRY')" & vbCrLf &
-"      AND (l.NextRetryAt IS NULL OR l.NextRetryAt <= @NowUtc)" & vbCrLf &
-"      AND (l.ClaimedAt IS NULL OR l.ClaimedAt <= @StaleBeforeUtc)" & vbCrLf &
+"      AND (l.NextRetryAt IS NULL OR l.NextRetryAt <= @NowLocal)" & vbCrLf &
+"      AND (l.ClaimedAt IS NULL OR l.ClaimedAt <= @StaleBeforeLocal)" & vbCrLf &
 "    ORDER BY l.CreatedAt, l.Id" & vbCrLf &
 ")" & vbCrLf &
 "UPDATE f" & vbCrLf &
 "SET ClaimedBy = @WorkerId," & vbCrLf &
-"    ClaimedAt = @NowUtc," & vbCrLf &
-"    UpdatedAt = @NowUtc" & vbCrLf &
+"    ClaimedAt = @NowLocal," & vbCrLf &
+"    UpdatedAt = @NowLocal" & vbCrLf &
 "OUTPUT inserted.Id, inserted.BranchId, inserted.BranchEmail, inserted.AgenziaId, inserted.AgenziaNome, inserted.AgenziaLuogoValue, inserted.AgenziaCity, inserted.AgenziaCounty, inserted.AgenziaPostCode, inserted.AgenziaLuogoCod, inserted.AgenziaIndirizzo, inserted.AgenziaRecapitoTel, inserted.Reason, inserted.SnapshotHash, inserted.Status, inserted.LastError, inserted.AttemptCount, inserted.LastAttemptAt, inserted.NextRetryAt, inserted.CreatedAt" & vbCrLf &
 "FROM dbo.Cargos_Agenzie_Frontiera f" & vbCrLf &
 "INNER JOIN Candidates c ON c.Id = f.Id;"
@@ -46,8 +46,8 @@ Namespace Persistence
                     command.CommandTimeout = _commandTimeoutSeconds
                     command.Parameters.Add("@Take", SqlDbType.Int).Value = Math.Max(1, maxItems)
                     command.Parameters.Add("@WorkerId", SqlDbType.NVarChar, 100).Value = workerId
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
-                    command.Parameters.Add("@StaleBeforeUtc", SqlDbType.DateTime2).Value = staleBeforeUtc
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
+                    command.Parameters.Add("@StaleBeforeLocal", SqlDbType.DateTime2).Value = staleBeforeLocal
 
                     Using reader As SqlDataReader = command.ExecuteReader()
                         While reader.Read()
@@ -91,50 +91,50 @@ Namespace Persistence
 
         Public Sub RegisterAttempt(itemId As Long) Implements IAgencyFrontieraRepository.RegisterAttempt
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Agenzie_Frontiera SET AttemptCount = AttemptCount + 1, LastAttemptAt = @NowUtc, UpdatedAt = @NowUtc WHERE Id = @Id;",
+                "UPDATE dbo.Cargos_Agenzie_Frontiera SET AttemptCount = AttemptCount + 1, LastAttemptAt = @NowLocal, UpdatedAt = @NowLocal WHERE Id = @Id;",
                 itemId,
-                Sub(command) command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                Sub(command) command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
             )
         End Sub
 
         Public Sub SetReadyToSend(itemId As Long, luogoCod As String) Implements IAgencyFrontieraRepository.SetReadyToSend
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'READY_TO_SEND', AgenziaLuogoCod = @LuogoCod, LastError = NULL, UpdatedAt = @NowUtc WHERE Id = @Id;",
+                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'READY_TO_SEND', AgenziaLuogoCod = @LuogoCod, LastError = NULL, UpdatedAt = @NowLocal WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LuogoCod", SqlDbType.NVarChar, 9).Value = If(luogoCod, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
 
         Public Sub SetSentOk(itemId As Long) Implements IAgencyFrontieraRepository.SetSentOk
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_OK', LastError = NULL, NextRetryAt = NULL, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowUtc WHERE Id = @Id;",
+                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_OK', LastError = NULL, NextRetryAt = NULL, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowLocal WHERE Id = @Id;",
                 itemId,
-                Sub(command) command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                Sub(command) command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
             )
         End Sub
 
         Public Sub SetDataError(itemId As Long, lastError As String) Implements IAgencyFrontieraRepository.SetDataError
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_KO_DATA', LastError = @LastError, NextRetryAt = NULL, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowUtc WHERE Id = @Id;",
+                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_KO_DATA', LastError = @LastError, NextRetryAt = NULL, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowLocal WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub
 
         Public Sub SetRetry(itemId As Long, lastError As String, nextRetryAt As DateTime) Implements IAgencyFrontieraRepository.SetRetry
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_KO_RETRY', LastError = @LastError, NextRetryAt = @NextRetryAt, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowUtc WHERE Id = @Id;",
+                "UPDATE dbo.Cargos_Agenzie_Frontiera SET Status = 'SENT_KO_RETRY', LastError = @LastError, NextRetryAt = @NextRetryAt, ClaimedBy = NULL, ClaimedAt = NULL, UpdatedAt = @NowLocal WHERE Id = @Id;",
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
                     command.Parameters.Add("@NextRetryAt", SqlDbType.DateTime2).Value = nextRetryAt
-                    command.Parameters.Add("@NowUtc", SqlDbType.DateTime2).Value = DateTime.UtcNow
+                    command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
                 End Sub
             )
         End Sub

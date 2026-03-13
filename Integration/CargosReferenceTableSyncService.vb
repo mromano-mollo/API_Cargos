@@ -36,14 +36,14 @@ Namespace Integration
 
             Dim failures As New List(Of String)()
             For Each definition In GetDefinitions()
-                Dim attemptedAtUtc As DateTime = DateTime.UtcNow
+                Dim attemptedAtLocal As DateTime = DateTime.Now
                 Try
                     _logger.Info(String.Format("Syncing CaRGOS table {0} ({1}).", definition.TableName, definition.TableId))
                     Dim rows = DownloadTableRows(definition)
-                    repository.ReplaceTable(definition, rows, attemptedAtUtc)
+                    repository.ReplaceTable(definition, rows, attemptedAtLocal)
                     _logger.Info(String.Format("Synced CaRGOS table {0}: {1} rows.", definition.TableName, rows.Count))
                 Catch ex As Exception
-                    repository.MarkSyncFailure(definition, ex.Message, attemptedAtUtc)
+                    repository.MarkSyncFailure(definition, ex.Message, attemptedAtLocal)
                     failures.Add(definition.TableName & ": " & ex.Message)
                 End Try
             Next

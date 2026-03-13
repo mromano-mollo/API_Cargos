@@ -1,4 +1,4 @@
-﻿/*
+/*
     CARGOS - Database setup and sync.
 
     The procedure dbo.Cargos_Sync_Contratti_Frontiera expects source view:
@@ -213,11 +213,11 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'LastQueuedAt') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie ADD LastQueuedAt DATETIME2 NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'LastSeenAt') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD LastSeenAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_LastSeenAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Agenzie ADD LastSeenAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_LastSeenAt DEFAULT (SYSDATETIME());
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'CreatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_CreatedAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Agenzie ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_CreatedAt DEFAULT (SYSDATETIME());
     IF COL_LENGTH(N'dbo.Cargos_Agenzie', N'UpdatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_UpdatedAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Agenzie ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_UpdatedAt DEFAULT (SYSDATETIME());
 
     IF NOT EXISTS (
         SELECT 1
@@ -289,9 +289,9 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'ClaimedAt') IS NULL
         ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD ClaimedAt DATETIME2 NULL;
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'CreatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_CreatedAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_CreatedAt DEFAULT (SYSDATETIME());
     IF COL_LENGTH(N'dbo.Cargos_Agenzie_Frontiera', N'UpdatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_UpdatedAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Agenzie_Frontiera ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Agenzie_Frontiera_UpdatedAt DEFAULT (SYSDATETIME());
 END;
 GO
 
@@ -335,7 +335,7 @@ BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Vista_Agenzie', N'BranchId') IS NULL
         THROW 50102, 'View dbo.Cargos_Vista_Agenzie must expose BranchId.', 1;
 
-    DECLARE @NowUtc DATETIME2 = SYSUTCDATETIME();
+    DECLARE @NowLocal DATETIME2 = SYSDATETIME();
     DECLARE @BranchEmailExpression NVARCHAR(256) = N'NULL';
     DECLARE @AgenziaIdExpression NVARCHAR(256);
     DECLARE @AgenziaNomeExpression NVARCHAR(256);
@@ -507,8 +507,8 @@ BEGIN
             tgt.AgenziaIndirizzo = src.AgenziaIndirizzo,
             tgt.AgenziaRecapitoTel = src.AgenziaRecapitoTel,
             tgt.PayloadFingerprint = src.PayloadFingerprint,
-            tgt.LastSeenAt = @NowUtc,
-            tgt.UpdatedAt = @NowUtc
+            tgt.LastSeenAt = @NowLocal,
+            tgt.UpdatedAt = @NowLocal
     WHEN NOT MATCHED THEN
         INSERT
         (
@@ -518,7 +518,7 @@ BEGIN
         VALUES
         (
             src.BranchId, src.BranchEmail, src.AgenziaId, src.AgenziaNome, src.AgenziaLuogoValue, src.AgenziaCity, src.AgenziaCounty, src.AgenziaPostCode, src.AgenziaIndirizzo, src.AgenziaRecapitoTel,
-            src.PayloadFingerprint, NULL, NULL, @NowUtc, @NowUtc, @NowUtc
+            src.PayloadFingerprint, NULL, NULL, @NowLocal, @NowLocal, @NowLocal
         );
 
     INSERT INTO dbo.Cargos_Agenzie_Frontiera
@@ -530,7 +530,7 @@ BEGIN
         INTO @Queued (BranchId, SnapshotHash)
     SELECT
         s.BranchId, s.BranchEmail, s.AgenziaId, s.AgenziaNome, s.AgenziaLuogoValue, s.AgenziaCity, s.AgenziaCounty, s.AgenziaPostCode, NULL, s.AgenziaIndirizzo, s.AgenziaRecapitoTel,
-        s.QueueReason, s.SnapshotHash, 'PENDING', 0, @NowUtc, @NowUtc
+        s.QueueReason, s.SnapshotHash, 'PENDING', 0, @NowLocal, @NowLocal
     FROM #SourceAgenzie s
     WHERE s.QueueReason IS NOT NULL
       AND NOT EXISTS
@@ -544,8 +544,8 @@ BEGIN
     UPDATE a
     SET
         a.LastQueuedFingerprint = q.SnapshotHash,
-        a.LastQueuedAt = @NowUtc,
-        a.UpdatedAt = @NowUtc
+        a.LastQueuedAt = @NowLocal,
+        a.UpdatedAt = @NowLocal
     FROM dbo.Cargos_Agenzie a
     INNER JOIN @Queued q
         ON q.BranchId = a.BranchId;
@@ -627,8 +627,8 @@ BEGIN
         LastSyncStatus NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Tabella_LastSyncStatus DEFAULT (N'NEVER'),
         LastSyncError NVARCHAR(MAX) NULL,
         [SyncedRowCount] INT NOT NULL CONSTRAINT DF_Cargos_Tabella_SyncedRowCount DEFAULT (0),
-        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt DEFAULT (SYSUTCDATETIME()),
-        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt DEFAULT (SYSUTCDATETIME())
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt DEFAULT (SYSDATETIME()),
+        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt DEFAULT (SYSDATETIME())
     );
 END;
 GO
@@ -650,8 +650,8 @@ BEGIN
         Column8 NVARCHAR(255) NULL,
         RawLine NVARCHAR(2000) NOT NULL,
         SyncedAt DATETIME2 NOT NULL,
-        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt DEFAULT (SYSUTCDATETIME()),
-        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt DEFAULT (SYSUTCDATETIME())
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt DEFAULT (SYSDATETIME()),
+        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt DEFAULT (SYSDATETIME())
     );
 
     ALTER TABLE dbo.Cargos_Tabella_Righe
@@ -715,9 +715,9 @@ BEGIN
         (N'DataFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_DataFingerprint DEFAULT (N'''')'),
         (N'LastQueuedFingerprint', N'NVARCHAR(128) NULL'),
         (N'LastQueuedAt', N'DATETIME2 NULL'),
-        (N'LastSeenAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_LastSeenAt DEFAULT (SYSUTCDATETIME())'),
-        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_CreatedAt DEFAULT (SYSUTCDATETIME())'),
-        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_UpdatedAt DEFAULT (SYSUTCDATETIME())');
+        (N'LastSeenAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_LastSeenAt DEFAULT (SYSDATETIME())'),
+        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_CreatedAt DEFAULT (SYSDATETIME())'),
+        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_UpdatedAt DEFAULT (SYSDATETIME())');
 
     DECLARE @SqlAddContratti NVARCHAR(MAX) = N'';
     SELECT @SqlAddContratti = @SqlAddContratti +
@@ -858,8 +858,8 @@ BEGIN
         (N'LastMissingFieldsHash', N'NVARCHAR(128) NULL'),
         (N'LastRejectEmailAt', N'DATETIME2 NULL'),
         (N'LastRejectHash', N'NVARCHAR(128) NULL'),
-        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CreatedAt DEFAULT (SYSUTCDATETIME())'),
-        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_UpdatedAt DEFAULT (SYSUTCDATETIME())');
+        (N'CreatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_CreatedAt DEFAULT (SYSDATETIME())'),
+        (N'UpdatedAt', N'DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Contratti_Frontiera_UpdatedAt DEFAULT (SYSDATETIME())');
 
     DECLARE @SqlAddFrontiera NVARCHAR(MAX) = N'';
     SELECT @SqlAddFrontiera = @SqlAddFrontiera +
@@ -925,10 +925,10 @@ BEGIN
         ALTER TABLE dbo.Cargos_Tabella ADD [SyncedRowCount] INT NOT NULL CONSTRAINT DF_Cargos_Tabella_SyncedRowCount_Migrate DEFAULT (0);
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella', N'CreatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Tabella ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_CreatedAt_Migrate DEFAULT (SYSDATETIME());
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella', N'UpdatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Tabella ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_UpdatedAt_Migrate DEFAULT (SYSDATETIME());
 END;
 GO
 
@@ -968,13 +968,13 @@ BEGIN
         ALTER TABLE dbo.Cargos_Tabella_Righe ADD RawLine NVARCHAR(2000) NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_RawLine DEFAULT (N'');
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'SyncedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella_Righe ADD SyncedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_SyncedAt DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD SyncedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_SyncedAt DEFAULT (SYSDATETIME());
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'CreatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella_Righe ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_CreatedAt_Migrate DEFAULT (SYSDATETIME());
 
     IF COL_LENGTH(N'dbo.Cargos_Tabella_Righe', N'UpdatedAt') IS NULL
-        ALTER TABLE dbo.Cargos_Tabella_Righe ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt_Migrate DEFAULT (SYSUTCDATETIME());
+        ALTER TABLE dbo.Cargos_Tabella_Righe ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Tabella_Righe_UpdatedAt_Migrate DEFAULT (SYSDATETIME());
 END;
 GO
 
@@ -992,10 +992,10 @@ BEGIN
     WHEN MATCHED THEN
         UPDATE SET
             tgt.TableName = src.TableName,
-            tgt.UpdatedAt = SYSUTCDATETIME()
+            tgt.UpdatedAt = SYSDATETIME()
     WHEN NOT MATCHED THEN
         INSERT (TableId, TableName, LastSyncedAt, LastSyncStatus, LastSyncError, [SyncedRowCount], CreatedAt, UpdatedAt)
-        VALUES (src.TableId, src.TableName, NULL, N'NEVER', NULL, 0, SYSUTCDATETIME(), SYSUTCDATETIME());
+        VALUES (src.TableId, src.TableName, NULL, N'NEVER', NULL, 0, SYSDATETIME(), SYSDATETIME());
 END;
 GO
 
@@ -1106,7 +1106,7 @@ BEGIN
         THROW 50002, @MissingMessage, 1;
     END;
 
-    DECLARE @NowUtc DATETIME2 = SYSUTCDATETIME();
+    DECLARE @NowLocal DATETIME2 = SYSDATETIME();
     DECLARE @TodayLocalDate DATE = CONVERT(DATE, SYSDATETIME());
     DECLARE @CompanyExpression NVARCHAR(256) = N'CAST(N''MOLLO'' AS NVARCHAR(50))';
     DECLARE @ContractNoExpression NVARCHAR(256);
@@ -1416,8 +1416,8 @@ BEGIN
             tgt.DateFingerprint = src.DateFingerprint,
             tgt.PayloadFingerprint = src.PayloadFingerprint,
             tgt.DataFingerprint = src.SnapshotHash,
-            tgt.LastSeenAt = @NowUtc,
-            tgt.UpdatedAt = @NowUtc
+            tgt.LastSeenAt = @NowLocal,
+            tgt.UpdatedAt = @NowLocal
     WHEN NOT MATCHED THEN
         INSERT
         (
@@ -1449,7 +1449,7 @@ BEGIN
             src.ConducenteContraenteDocideLuogorilCod, src.ConducenteContraentePatenteNumero,
             src.ConducenteContraentePatenteLuogorilCod,
             src.RecordLine, src.DateFingerprint, src.PayloadFingerprint, src.SnapshotHash,
-            NULL, NULL, @NowUtc, @NowUtc, @NowUtc
+            NULL, NULL, @NowLocal, @NowLocal, @NowLocal
         );
 
     INSERT INTO dbo.Cargos_Contratti_Frontiera
@@ -1485,7 +1485,7 @@ BEGIN
         s.ConducenteContraentePatenteLuogorilCod,
         s.QueueReason, s.SnapshotHash, s.RecordLine, 'PENDING', 0,
         lastf.LastMissingEmailAt, lastf.LastMissingFieldsHash, lastf.LastRejectEmailAt, lastf.LastRejectHash,
-        @NowUtc, @NowUtc
+        @NowLocal, @NowLocal
     FROM #SourceContracts s
     OUTER APPLY
     (
@@ -1514,8 +1514,8 @@ BEGIN
     UPDATE c
     SET
         c.LastQueuedFingerprint = q.SnapshotHash,
-        c.LastQueuedAt = @NowUtc,
-        c.UpdatedAt = @NowUtc
+        c.LastQueuedAt = @NowLocal,
+        c.UpdatedAt = @NowLocal
     FROM dbo.Cargos_Contratti c
     INNER JOIN @Queued q
         ON q.Company = c.Company
@@ -1526,3 +1526,4 @@ BEGIN
     FROM @Queued;
 END;
 GO
+

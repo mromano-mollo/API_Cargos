@@ -96,7 +96,7 @@ Namespace Orchestration
                     minutesDelay = 240
             End Select
 
-            Return DateTime.UtcNow.AddMinutes(minutesDelay)
+            Return DateTime.Now.AddMinutes(minutesDelay)
         End Function
     End Class
 End Namespace

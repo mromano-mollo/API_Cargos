@@ -155,7 +155,7 @@ Namespace Orchestration
                     minutesDelay = 240
             End Select
 
-            Return DateTime.UtcNow.AddMinutes(minutesDelay)
+            Return DateTime.Now.AddMinutes(minutesDelay)
         End Function
 
         Private Shared Function SplitBatches(items As IList(Of OutboxRecord), batchSize As Integer) As IList(Of IList(Of OutboxRecord))

@@ -227,6 +227,7 @@ Core fields:
 - For overdue still-open rentals already extracted by the view, if `CONTRATTO_CHECKIN_DATA < today`, the sync procedure must normalize the effective check-in date to today's local date before computing fingerprints. With the existing date hash logic, this yields at most one `DATE_CHANGE` resend per contract-line per day.
 - If `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes for an already processed contract-line, the sync procedure must enqueue a new `LOCATION_CHANGE` item even if the last status was already `SENT_OK`.
 - For `Check`/`Send`, HTTP status alone is not enough: a `200 OK` response with line item `esito=false` must be classified as `DataError`, and nested `errore.error + errore.error_description` must be flattened into the stored error message.
+- All persisted `Cargos_*` timestamps and worker comparisons use local server datetime, not UTC.
 
 ### CaRGOS fields to send (source: official `TRACCIATO RECORD` / `Dimensione`)
 The following matrix is the current source of truth for validation + record build. Total fixed-width length: `1505`.
@@ -769,6 +770,7 @@ Notes:
 - [x] Added multi-company contract partitioning with `Company` as part of the snapshot/outbox identity and queue idempotency key; sync defaults to `MOLLO` when the source view does not expose `Company` yet.
 - [x] Added explicit `LOCATION_CHANGE` resend logic when `CONTRATTO_CHECKOUT_LUOGO_COD` or `CONTRATTO_CHECKIN_LUOGO_COD` changes after a previously processed snapshot.
 - [x] Corrected CaRGOS line-response parsing to detect `esito=false` inside HTTP `200` and flatten nested `errore.error` + `errore.error_description` into `LastError`.
+- [x] Switched `Cargos_*` table timestamps, retry scheduling, claim timeouts, and SQL defaults/procedures from UTC to local server datetime.
 
 ---
 

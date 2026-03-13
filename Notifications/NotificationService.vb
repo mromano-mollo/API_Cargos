@@ -74,7 +74,7 @@ Namespace Notifications
                 Return False
             End If
 
-            If lastSentAt.HasValue AndAlso String.Equals(lastHash, currentHash, StringComparison.OrdinalIgnoreCase) AndAlso lastSentAt.Value > DateTime.UtcNow.AddHours(-_settings.EmailCooldownHours) Then
+            If lastSentAt.HasValue AndAlso String.Equals(lastHash, currentHash, StringComparison.OrdinalIgnoreCase) AndAlso lastSentAt.Value > DateTime.Now.AddHours(-_settings.EmailCooldownHours) Then
                 _logger.Info(String.Format("Skipping {0} email for {1}/{2}: anti-spam cooldown active.", scenario, item.ContractNo, item.ContractLineNo))
                 Return False
             End If
