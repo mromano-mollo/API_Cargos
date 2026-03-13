@@ -11,6 +11,7 @@ Namespace Verification
             VerifyValidation()
             VerifyLookupResolution()
             VerifyRecordBuilder()
+            VerifyCargosClientErrorParsing()
             VerifyReferenceTableParsing()
             VerifyCrypto()
         End Sub
@@ -94,6 +95,20 @@ Namespace Verification
             AssertTrue(rows(0).Code = "0", "Reference table parser should read the first code column.")
             AssertTrue(rows(1).Description = "Contanti", "Reference table parser should decode base64 content.")
             AssertTrue(wrappedRows.Count = 2, "Reference table parser should also handle JSON-string wrapped payloads.")
+        End Sub
+
+        Private Shared Sub VerifyCargosClientErrorParsing()
+            Dim json As String =
+                "[{""esito"":false,""transactionid"":null,""errore"":{""error"":""TracciatoErrato"",""error_description"":""Campo: AGENZIA_NOME - Vincolo SetCaratteri - Sono presenti caratteri non validi"",""error_code"":4,""timestamp"":""2026-03-12T17:45:40.7252783+01:00""}}]"
+
+            Dim sendOutcomes = CargosClient.ParseLineResponse(1, json, True)
+            AssertTrue(sendOutcomes.Count = 1, "CargosClient error parser should return one outcome.")
+            AssertTrue(sendOutcomes(0).OutcomeType = CargosOutcomeType.DataError, "CargosClient should classify esito=false as DataError.")
+            AssertTrue(sendOutcomes(0).ErrorMessage = "TracciatoErrato - Campo: AGENZIA_NOME - Vincolo SetCaratteri - Sono presenti caratteri non validi",
+                "CargosClient should flatten nested error + error_description.")
+
+            Dim checkOutcomes = CargosClient.ParseLineResponse(1, json, False)
+            AssertTrue(checkOutcomes(0).OutcomeType = CargosOutcomeType.DataError, "Check parsing should not treat esito=false as success.")
         End Sub
 
         Private Shared Sub VerifyCrypto()

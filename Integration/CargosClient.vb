@@ -62,7 +62,7 @@ Namespace Integration
             End Try
         End Function
 
-        Private Function ParseLineResponse(expectedCount As Integer, responseBody As String, allowTransactionId As Boolean) As IList(Of CargosLineOutcome)
+        Friend Shared Function ParseLineResponse(expectedCount As Integer, responseBody As String, allowTransactionId As Boolean) As IList(Of CargosLineOutcome)
             Dim serializer As New JavaScriptSerializer()
             Dim parsed As Object
 
@@ -96,7 +96,7 @@ Namespace Integration
             Return outcomes
         End Function
 
-        Private Function ParseItemOutcome(item As Object, allowTransactionId As Boolean) As CargosLineOutcome
+        Private Shared Function ParseItemOutcome(item As Object, allowTransactionId As Boolean) As CargosLineOutcome
             Dim dict As IDictionary(Of String, Object) = TryCast(item, IDictionary(Of String, Object))
             If dict Is Nothing Then
                 Return New CargosLineOutcome With {
@@ -106,11 +106,25 @@ Namespace Integration
             End If
 
             Dim transactionId As String = ReadString(dict, "transactionid", "transactionId", "transaction_id", "idTransazione")
-            Dim errorMessage As String = ReadString(dict, "error", "message", "messaggio", "descrizione", "detail", "dettaglio")
-            Dim hasSuccessFlag As Boolean = TryReadBool(dict, "success", "ok", "esito", "isValid", "valid", "valido")
+            Dim errorMessage As String = BuildErrorMessage(dict)
+            Dim successValue As Boolean = False
+            Dim hasSuccessFlag As Boolean = TryReadBoolValue(dict, successValue, "success", "ok", "esito", "isValid", "valid", "valido")
 
-            If hasSuccessFlag OrElse
-               (allowTransactionId AndAlso Not String.IsNullOrWhiteSpace(transactionId)) OrElse
+            If hasSuccessFlag Then
+                If successValue Then
+                    Return New CargosLineOutcome With {
+                        .OutcomeType = CargosOutcomeType.Success,
+                        .TransactionId = transactionId
+                    }
+                End If
+
+                Return New CargosLineOutcome With {
+                    .OutcomeType = CargosOutcomeType.DataError,
+                    .ErrorMessage = If(String.IsNullOrWhiteSpace(errorMessage), "CaRGOS rejected payload line.", errorMessage)
+                }
+            End If
+
+            If (allowTransactionId AndAlso Not String.IsNullOrWhiteSpace(transactionId)) OrElse
                ((Not allowTransactionId) AndAlso String.IsNullOrWhiteSpace(errorMessage)) Then
                 Return New CargosLineOutcome With {
                     .OutcomeType = CargosOutcomeType.Success,
@@ -190,28 +204,80 @@ Namespace Integration
             Return result
         End Function
 
-        Private Shared Function TryReadBool(root As IDictionary(Of String, Object), ParamArray keys As String()) As Boolean
+        Private Shared Function TryReadBoolValue(root As IDictionary(Of String, Object), ByRef value As Boolean, ParamArray keys As String()) As Boolean
             For Each key In keys
                 For Each kvp In root
                     If String.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase) Then
                         If kvp.Value Is Nothing Then
-                            Return False
+                            value = False
+                            Return True
                         End If
 
                         Dim boolValue As Boolean
                         If Boolean.TryParse(Convert.ToString(kvp.Value), boolValue) Then
-                            Return boolValue
+                            value = boolValue
+                            Return True
                         End If
 
                         Dim intValue As Integer
                         If Integer.TryParse(Convert.ToString(kvp.Value), intValue) Then
-                            Return intValue <> 0
+                            value = intValue <> 0
+                            Return True
                         End If
                     End If
                 Next
             Next
 
+            value = False
             Return False
+        End Function
+
+        Private Shared Function BuildErrorMessage(root As IDictionary(Of String, Object)) As String
+            Dim flatError As String = CombineErrorParts(
+                ReadString(root, "error"),
+                ReadString(root, "error_description", "description", "descrizione", "message", "messaggio", "detail", "dettaglio"))
+            If Not String.IsNullOrWhiteSpace(flatError) Then
+                Return flatError
+            End If
+
+            Dim nestedError = TryReadDictionary(root, "errore", "error")
+            If nestedError IsNot Nothing Then
+                Dim nestedMessage As String = CombineErrorParts(
+                    ReadString(nestedError, "error"),
+                    ReadString(nestedError, "error_description", "description", "descrizione", "message", "messaggio", "detail", "dettaglio"))
+                If Not String.IsNullOrWhiteSpace(nestedMessage) Then
+                    Return nestedMessage
+                End If
+            End If
+
+            Return String.Empty
+        End Function
+
+        Private Shared Function CombineErrorParts(errorValue As String, descriptionValue As String) As String
+            Dim safeError As String = If(errorValue, String.Empty).Trim()
+            Dim safeDescription As String = If(descriptionValue, String.Empty).Trim()
+
+            If String.IsNullOrWhiteSpace(safeError) Then
+                Return safeDescription
+            End If
+
+            If String.IsNullOrWhiteSpace(safeDescription) Then
+                Return safeError
+            End If
+
+            Return safeError & " - " & safeDescription
+        End Function
+
+        Private Shared Function TryReadDictionary(root As IDictionary(Of String, Object), ParamArray keys As String()) As IDictionary(Of String, Object)
+            For Each key In keys
+                For Each kvp In root
+                    If String.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase) Then
+                        Return TryCast(kvp.Value, IDictionary(Of String, Object))
+                    End If
+                Next
+            Next
+
+            Return Nothing
         End Function
 
         Private Shared Function ReadString(root As IDictionary(Of String, Object), ParamArray keys As String()) As String

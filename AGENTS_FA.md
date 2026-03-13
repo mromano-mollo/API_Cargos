@@ -61,6 +61,7 @@ This document is written to enable an AI coding agent (Codex) to implement the s
   - If success: store `transactionid` and mark `SENT_OK`.
   - If data error: mark `SENT_KO_DATA` and notify branch with CaRGOS error details.
   - If technical error: mark `SENT_KO_RETRY` (retry later).
+- If CaRGOS returns HTTP `200` with per-line `esito=false`, the app must still treat that line as a data error and persist `errore.error + errore.error_description` into `LastError`.
 
 ### FR-06 → Idempotency / No duplicate sending
 - The service must not send the same contract snapshot twice.
@@ -604,6 +605,7 @@ Add correlation id per batch to link logs.
 - [x] Applied `WITH (NOLOCK)` only on source extraction views where eventual consistency is acceptable; queue/snapshot tables remain without `NOLOCK`.
 - [x] Added citizenship lookup + foreign-driver override rule for birth/document/license luogo codes when citizenship is not Italy (`100000100`).
 - [x] Added explicit resend rule for `CONTRATTO_CHECKOUT_LUOGO_COD` / `CONTRATTO_CHECKIN_LUOGO_COD` changes using queue reason `LOCATION_CHANGE`, even after a previous `SENT_OK`.
+- [x] Corrected CaRGOS line-response parsing so HTTP `200` with `esito=false` is stored as `SENT_KO_DATA` and `LastError` uses nested `errore.error + errore.error_description`.
 
 ---
 
