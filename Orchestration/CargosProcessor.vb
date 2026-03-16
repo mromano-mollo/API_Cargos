@@ -64,6 +64,14 @@ Namespace Orchestration
                     _lookupService.Resolve(item, validation)
                     validation.Merge(_validationService.Validate(item))
                     If Not validation.IsValid Then
+                        _logger.Warn(String.Format(
+                            "Validation failed | Company={0} | ContractNo={1} | ContractLineNo={2} | Reason={3} | Details={4}",
+                            item.Company,
+                            item.ContractNo,
+                            item.ContractLineNo,
+                            item.Reason,
+                            validation.ToSummary()
+                        ))
                         _frontieraRepository.SetMissingData(item.Id, validation.MissingFields, validation.ToSummary())
                         Dim missingHash As String = _notificationService.TrySendMissingData(item, validation)
                         If Not String.IsNullOrWhiteSpace(missingHash) Then
@@ -74,6 +82,13 @@ Namespace Orchestration
 
                     item.RecordLine = _recordBuilder.Build(item)
                     _frontieraRepository.SetReadyToSend(item.Id, item.RecordLine)
+                    _logger.Info(String.Format(
+                        "Item ready to send | Company={0} | ContractNo={1} | ContractLineNo={2} | Reason={3}",
+                        item.Company,
+                        item.ContractNo,
+                        item.ContractLineNo,
+                        item.Reason
+                    ))
                     sendable.Add(item)
                 Next
 
@@ -118,22 +133,57 @@ Namespace Orchestration
                         If isCheckOperation Then
                             If _settings.CargosCheckOnly Then
                                 _frontieraRepository.SetCheckOk(item.Id)
+                                _logger.Info(String.Format(
+                                    "CHECK_OK | Company={0} | ContractNo={1} | ContractLineNo={2}",
+                                    item.Company,
+                                    item.ContractNo,
+                                    item.ContractLineNo
+                                ))
                             Else
+                                _logger.Info(String.Format(
+                                    "CHECK passed | Company={0} | ContractNo={1} | ContractLineNo={2}",
+                                    item.Company,
+                                    item.ContractNo,
+                                    item.ContractLineNo
+                                ))
                                 remaining.Add(item)
                             End If
                         Else
                             _frontieraRepository.SetSentOk(item.Id, outcome.TransactionId)
+                            _logger.Info(String.Format(
+                                "SENT_OK | Company={0} | ContractNo={1} | ContractLineNo={2} | TransactionId={3}",
+                                item.Company,
+                                item.ContractNo,
+                                item.ContractLineNo,
+                                If(outcome.TransactionId, String.Empty)
+                            ))
                         End If
 
                     Case CargosOutcomeType.DataError
                         _frontieraRepository.SetDataError(item.Id, outcome.ErrorMessage)
+                        _logger.Warn(String.Format(
+                            "SENT_KO_DATA | Company={0} | ContractNo={1} | ContractLineNo={2} | Error={3}",
+                            item.Company,
+                            item.ContractNo,
+                            item.ContractLineNo,
+                            If(outcome.ErrorMessage, String.Empty)
+                        ))
                         Dim rejectHash As String = _notificationService.TrySendReject(item, outcome.ErrorMessage)
                         If Not String.IsNullOrWhiteSpace(rejectHash) Then
                             _frontieraRepository.MarkRejectEmailSent(item.Id, rejectHash)
                         End If
 
                     Case Else
-                        _frontieraRepository.SetRetry(item.Id, outcome.ErrorMessage, ComputeNextRetryAt(item.AttemptCount))
+                        Dim nextRetryAt As DateTime = ComputeNextRetryAt(item.AttemptCount)
+                        _frontieraRepository.SetRetry(item.Id, outcome.ErrorMessage, nextRetryAt)
+                        _logger.Warn(String.Format(
+                            "SENT_KO_RETRY | Company={0} | ContractNo={1} | ContractLineNo={2} | NextRetryAt={3:yyyy-MM-dd HH:mm:ss} | Error={4}",
+                            item.Company,
+                            item.ContractNo,
+                            item.ContractLineNo,
+                            nextRetryAt,
+                            If(outcome.ErrorMessage, String.Empty)
+                        ))
                 End Select
             Next
 

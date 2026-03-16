@@ -49,6 +49,12 @@ Namespace Orchestration
                 validation.Merge(_validationService.Validate(item))
 
                 If Not validation.IsValid Then
+                    _logger.Warn(String.Format(
+                        "Agency validation failed | BranchId={0} | AgenziaId={1} | Details={2}",
+                        item.BranchId,
+                        item.AgenziaId,
+                        validation.ToSummary()
+                    ))
                     _frontieraRepository.SetDataError(item.Id, validation.ToSummary())
                     Continue For
                 End If
@@ -59,10 +65,29 @@ Namespace Orchestration
                 Select Case outcome.OutcomeType
                     Case CargosOutcomeType.Success
                         _frontieraRepository.SetSentOk(item.Id)
+                        _logger.Info(String.Format(
+                            "Agency SENT_OK | BranchId={0} | AgenziaId={1}",
+                            item.BranchId,
+                            item.AgenziaId
+                        ))
                     Case CargosOutcomeType.DataError
                         _frontieraRepository.SetDataError(item.Id, outcome.ErrorMessage)
+                        _logger.Warn(String.Format(
+                            "Agency SENT_KO_DATA | BranchId={0} | AgenziaId={1} | Error={2}",
+                            item.BranchId,
+                            item.AgenziaId,
+                            If(outcome.ErrorMessage, String.Empty)
+                        ))
                     Case Else
-                        _frontieraRepository.SetRetry(item.Id, outcome.ErrorMessage, ComputeNextRetryAt(item.AttemptCount))
+                        Dim nextRetryAt As DateTime = ComputeNextRetryAt(item.AttemptCount)
+                        _frontieraRepository.SetRetry(item.Id, outcome.ErrorMessage, nextRetryAt)
+                        _logger.Warn(String.Format(
+                            "Agency SENT_KO_RETRY | BranchId={0} | AgenziaId={1} | NextRetryAt={2:yyyy-MM-dd HH:mm:ss} | Error={3}",
+                            item.BranchId,
+                            item.AgenziaId,
+                            nextRetryAt,
+                            If(outcome.ErrorMessage, String.Empty)
+                        ))
                 End Select
             Next
 

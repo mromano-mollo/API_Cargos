@@ -660,6 +660,24 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_Log', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cargos_Log
+    (
+        Id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Cargos_Log PRIMARY KEY,
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Log_CreatedAt DEFAULT (SYSDATETIME()),
+        [Level] NVARCHAR(20) NOT NULL,
+        [Message] NVARCHAR(MAX) NOT NULL,
+        ExceptionType NVARCHAR(500) NULL,
+        ExceptionMessage NVARCHAR(MAX) NULL,
+        ExceptionStackTrace NVARCHAR(MAX) NULL,
+        MachineName NVARCHAR(100) NULL,
+        ProcessId INT NULL,
+        ThreadId INT NULL
+    );
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Contratti', N'U') IS NOT NULL
 BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ContractNo') IS NULL
@@ -907,6 +925,20 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_Log', N'U') IS NOT NULL
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM sys.indexes
+       WHERE name = N'IX_Cargos_Log_CreatedAt'
+         AND object_id = OBJECT_ID(N'dbo.Cargos_Log')
+   )
+BEGIN
+    CREATE INDEX IX_Cargos_Log_CreatedAt
+    ON dbo.Cargos_Log (CreatedAt);
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
 BEGIN
     IF COL_LENGTH(N'dbo.Cargos_Tabella', N'TableName') IS NULL
@@ -978,12 +1010,45 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_Log', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'CreatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_Log_CreatedAt_Migrate DEFAULT (SYSDATETIME());
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'Level') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD [Level] NVARCHAR(20) NOT NULL CONSTRAINT DF_Cargos_Log_Level DEFAULT (N'INFO');
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'Level') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Log', N'Level') < 40
+        ALTER TABLE dbo.Cargos_Log ALTER COLUMN [Level] NVARCHAR(20) NOT NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'Message') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD [Message] NVARCHAR(MAX) NOT NULL CONSTRAINT DF_Cargos_Log_Message DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ExceptionType') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD ExceptionType NVARCHAR(500) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ExceptionType') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Log', N'ExceptionType') < 1000
+        ALTER TABLE dbo.Cargos_Log ALTER COLUMN ExceptionType NVARCHAR(500) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ExceptionMessage') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD ExceptionMessage NVARCHAR(MAX) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ExceptionStackTrace') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD ExceptionStackTrace NVARCHAR(MAX) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'MachineName') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD MachineName NVARCHAR(100) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'MachineName') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Log', N'MachineName') < 200
+        ALTER TABLE dbo.Cargos_Log ALTER COLUMN MachineName NVARCHAR(100) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ProcessId') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD ProcessId INT NULL;
+    IF COL_LENGTH(N'dbo.Cargos_Log', N'ThreadId') IS NULL
+        ALTER TABLE dbo.Cargos_Log ADD ThreadId INT NULL;
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Agenzie', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Agenzie_Frontiera', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Contratti', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Tabella_Righe', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_Log', N'U') IS NOT NULL
 BEGIN
     DECLARE @LocalDatetimeDefaults TABLE
     (
@@ -1008,7 +1073,8 @@ BEGIN
         (N'dbo.Cargos_Tabella', N'UpdatedAt', N'DF_Cargos_Tabella_UpdatedAt'),
         (N'dbo.Cargos_Tabella_Righe', N'SyncedAt', N'DF_Cargos_Tabella_Righe_SyncedAt'),
         (N'dbo.Cargos_Tabella_Righe', N'CreatedAt', N'DF_Cargos_Tabella_Righe_CreatedAt'),
-        (N'dbo.Cargos_Tabella_Righe', N'UpdatedAt', N'DF_Cargos_Tabella_Righe_UpdatedAt');
+        (N'dbo.Cargos_Tabella_Righe', N'UpdatedAt', N'DF_Cargos_Tabella_Righe_UpdatedAt'),
+        (N'dbo.Cargos_Log', N'CreatedAt', N'DF_Cargos_Log_CreatedAt');
 
     DECLARE
         @DefaultTableName SYSNAME,

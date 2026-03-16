@@ -508,6 +508,19 @@ Security:
 ---
 
 ## 14. Logging & Observability
+Runtime logging is persisted to `dbo.Cargos_Log` for `WARN`/`ERROR` events and also written to console.
+
+Suggested `Cargos_Log` fields:
+- `CreatedAt`
+- `Level`
+- `Message`
+- `ExceptionType`
+- `ExceptionMessage`
+- `ExceptionStackTrace`
+- `MachineName`
+- `ProcessId`
+- `ThreadId`
+
 Log at minimum:
 - Contract processing start/end
 - Validation failures + missing fields
@@ -515,7 +528,14 @@ Log at minimum:
 - Per-line result: transactionid or error
 - Email notifications sent
 
-Add correlation id per batch to link logs.
+Current implementation also logs per-item status transitions:
+- `CHECK_OK`
+- `SENT_OK`
+- `SENT_KO_DATA`
+- `SENT_KO_RETRY`
+- agency bootstrap validation/send outcomes
+
+Add correlation id per batch later if needed.
 
 ---
 
@@ -609,6 +629,7 @@ Add correlation id per batch to link logs.
 - [x] Corrected CaRGOS line-response parsing so HTTP `200` with `esito=false` is stored as `SENT_KO_DATA` and `LastError` uses nested `errore.error + errore.error_description`.
 - [x] Switched `Cargos_*` table timestamps and worker comparisons from UTC to local server datetime (`DateTime.Now` / `SYSDATETIME`).
 - [x] Added SQL migration logic to drop/recreate existing datetime default constraints on `Cargos_*` tables, so rerunning `Cargos_Setup.sql` also fixes already-created tables.
+- [x] Added persistent application logging with new table `dbo.Cargos_Log` and automatic console + DB sink via the central `ILogger`.
 
 ---
 

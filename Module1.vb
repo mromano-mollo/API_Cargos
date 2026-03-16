@@ -16,6 +16,11 @@ Module Module1
 
         Try
             Dim settings As AppSettings = AppSettings.Load()
+            If Not String.IsNullOrWhiteSpace(settings.ConnectionString) Then
+                logger = New CompositeLogger(logger, New SqlLogger(settings.ConnectionString, settings.DbCommandTimeoutSeconds))
+                logger.Info("Database logging enabled on dbo.Cargos_Log.")
+            End If
+
             ValidateSettings(settings)
 
             If settings.RunSelfTests Then
@@ -101,6 +106,8 @@ Module Module1
                 End Try
             End If
 
+            logger.Info("API_Cargos worker startup completed.")
+
             Do While DateTime.Now.Hour < settings.WorkerCutoffHour
                 Try
                     Environment.ExitCode = processor.Run(workerId)
@@ -115,6 +122,8 @@ Module Module1
 
                 Thread.Sleep(settings.WorkerSleepMilliseconds)
             Loop
+
+            logger.Info("Worker stopped because cutoff hour was reached.")
         Catch ex As Exception
             logger.Error("Fatal startup error.", ex)
             Environment.ExitCode = 1

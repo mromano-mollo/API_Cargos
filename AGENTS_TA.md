@@ -511,6 +511,22 @@ Startup validation:
 
 ## 6. Logging and observability
 
+Runtime logging sink:
+- console logger remains active for terminal visibility;
+- DB logger writes only `WARN` and `ERROR` events to `dbo.Cargos_Log`;
+- startup composes both through the shared `ILogger`, so existing call sites do not change.
+
+`dbo.Cargos_Log` fields:
+- `CreatedAt`
+- `Level`
+- `Message`
+- `ExceptionType`
+- `ExceptionMessage`
+- `ExceptionStackTrace`
+- `MachineName`
+- `ProcessId`
+- `ThreadId`
+
 Minimum logging events:
 - run start/end + correlation id
 - contracts fetched count
@@ -518,6 +534,13 @@ Minimum logging events:
 - batch send/check start/end
 - per-line result (transaction id or error code)
 - retry scheduling decisions
+
+Current implementation now persists:
+- cycle start/end;
+- claimed counts;
+- per-contract validation failure summaries;
+- contract `CHECK_OK` / `SENT_OK` / `SENT_KO_DATA` / `SENT_KO_RETRY`;
+- agency bootstrap validation failures and send outcomes.
 - notification sent/skipped (anti-spam reason)
 
 Do not log:
@@ -772,6 +795,7 @@ Notes:
 - [x] Corrected CaRGOS line-response parsing to detect `esito=false` inside HTTP `200` and flatten nested `errore.error` + `errore.error_description` into `LastError`.
 - [x] Switched `Cargos_*` table timestamps, retry scheduling, claim timeouts, and SQL defaults/procedures from UTC to local server datetime.
 - [x] Added an explicit SQL migration block that refreshes existing datetime default constraints on `Cargos_*` tables to `SYSDATETIME()`, because altering script text alone does not update already-bound defaults.
+- [x] Added persistent runtime logging via new table `dbo.Cargos_Log` and a composite `ILogger` that writes both to console and SQL Server.
 
 ---
 

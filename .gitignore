@@ -1,4 +1,4 @@
 .vs/
 .svn/
-.bin/Debug/
-.obj/Debug/
+bin/Debug/
+obj/Debug/
