@@ -152,6 +152,7 @@ Core fields:
 - all mandatory CaRGOS payload fields
 - `DateFingerprint` (normalized hash from checkin/checkout)
 - `PayloadFingerprint` (normalized hash from mandatory payload fields used by validation/record build; excludes internal metadata such as `BranchId` and `BranchEmail`)
+- `Status` quick-view mirror of the latest row status in `Cargos_Contratti_Frontiera`
 - `LastQueuedFingerprint`
 - `LastQueuedAt`
 - `LastSeenAt`
@@ -796,6 +797,7 @@ Notes:
 - [x] Switched `Cargos_*` table timestamps, retry scheduling, claim timeouts, and SQL defaults/procedures from UTC to local server datetime.
 - [x] Added an explicit SQL migration block that refreshes existing datetime default constraints on `Cargos_*` tables to `SYSDATETIME()`, because altering script text alone does not update already-bound defaults.
 - [x] Added persistent runtime logging via new table `dbo.Cargos_Log` and a composite `ILogger` that writes both to console and SQL Server.
+- [x] Added `Cargos_Contratti.Status` and synchronized it from queue creation plus all repository status transitions for fast operational querying.
 
 ---
 

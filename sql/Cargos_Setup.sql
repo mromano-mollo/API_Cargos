@@ -95,6 +95,7 @@ BEGIN
         ConducenteContraentePatenteNumero NVARCHAR(20) NULL,
         ConducenteContraentePatenteLuogorilCod NVARCHAR(9) NULL,
         RecordLine NVARCHAR(2000) NULL,
+        Status NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Contratti_Status DEFAULT (N'PENDING'),
         DateFingerprint NVARCHAR(128) NOT NULL,
         PayloadFingerprint NVARCHAR(128) NOT NULL,
         DataFingerprint NVARCHAR(128) NOT NULL,
@@ -728,6 +729,7 @@ BEGIN
         (N'ConducenteContraentePatenteNumero', N'NVARCHAR(20) NULL'),
         (N'ConducenteContraentePatenteLuogorilCod', N'NVARCHAR(9) NULL'),
         (N'RecordLine', N'NVARCHAR(2000) NULL'),
+        (N'Status', N'NVARCHAR(30) NOT NULL CONSTRAINT DF_Cargos_Contratti_Status_Migrate DEFAULT (N''PENDING'')'),
         (N'DateFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_DateFingerprint DEFAULT (N'''')'),
         (N'PayloadFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_PayloadFingerprint DEFAULT (N'''')'),
         (N'DataFingerprint', N'NVARCHAR(128) NOT NULL CONSTRAINT DF_Cargos_Contratti_DataFingerprint DEFAULT (N'''')'),
@@ -775,6 +777,13 @@ BEGIN
         ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ConducenteContraenteCittadinanzaCod NVARCHAR(9) NULL;
     IF COL_LENGTH(N'dbo.Cargos_Contratti', N'ConducenteContraenteDocideTipoCod') < 10
         ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN ConducenteContraenteDocideTipoCod NVARCHAR(5) NULL;
+    UPDATE dbo.Cargos_Contratti
+    SET [Status] = N'PENDING'
+    WHERE [Status] IS NULL
+       OR LTRIM(RTRIM([Status])) = N'';
+    IF COL_LENGTH(N'dbo.Cargos_Contratti', N'Status') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_Contratti', N'Status') < 60
+        ALTER TABLE dbo.Cargos_Contratti ALTER COLUMN [Status] NVARCHAR(30) NOT NULL;
 
     IF EXISTS (
         SELECT 1
@@ -808,6 +817,32 @@ BEGIN
     )
         ALTER TABLE dbo.Cargos_Contratti
             ADD CONSTRAINT UQ_Cargos_Contratti_ContractLine UNIQUE (Company, ContractNo, [ContractLineNo]);
+
+    ;WITH LatestStatus AS
+    (
+        SELECT
+            f.Company,
+            f.ContractNo,
+            f.[ContractLineNo],
+            f.Status,
+            ROW_NUMBER() OVER
+            (
+                PARTITION BY f.Company, f.ContractNo, f.[ContractLineNo]
+                ORDER BY f.CreatedAt DESC, f.Id DESC
+            ) AS rn
+        FROM dbo.Cargos_Contratti_Frontiera f
+    )
+    UPDATE c
+    SET
+        c.Status = ls.Status,
+        c.UpdatedAt = SYSDATETIME()
+    FROM dbo.Cargos_Contratti c
+    INNER JOIN LatestStatus ls
+        ON ls.Company = c.Company
+       AND ls.ContractNo = c.ContractNo
+       AND ls.[ContractLineNo] = c.[ContractLineNo]
+       AND ls.rn = 1
+    WHERE ISNULL(c.Status, N'') <> ISNULL(ls.Status, N'');
 END;
 GO
 
@@ -1579,7 +1614,7 @@ BEGIN
             ConducenteContraenteDocideTipoCod, ConducenteContraenteDocideNumero,
             ConducenteContraenteDocideLuogorilCod, ConducenteContraentePatenteNumero,
             ConducenteContraentePatenteLuogorilCod,
-            RecordLine, DateFingerprint, PayloadFingerprint, DataFingerprint,
+            RecordLine, Status, DateFingerprint, PayloadFingerprint, DataFingerprint,
             LastQueuedFingerprint, LastQueuedAt, LastSeenAt, CreatedAt, UpdatedAt
         )
         VALUES
@@ -1595,7 +1630,7 @@ BEGIN
             src.ConducenteContraenteDocideTipoCod, src.ConducenteContraenteDocideNumero,
             src.ConducenteContraenteDocideLuogorilCod, src.ConducenteContraentePatenteNumero,
             src.ConducenteContraentePatenteLuogorilCod,
-            src.RecordLine, src.DateFingerprint, src.PayloadFingerprint, src.SnapshotHash,
+            src.RecordLine, N'PENDING', src.DateFingerprint, src.PayloadFingerprint, src.SnapshotHash,
             NULL, NULL, @NowLocal, @NowLocal, @NowLocal
         );
 
@@ -1674,6 +1709,7 @@ BEGIN
 
     UPDATE c
     SET
+        c.Status = N'PENDING',
         c.LastQueuedFingerprint = q.SnapshotHash,
         c.LastQueuedAt = @NowLocal,
         c.UpdatedAt = @NowLocal

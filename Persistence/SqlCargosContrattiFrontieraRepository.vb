@@ -136,13 +136,16 @@ Namespace Persistence
 
         Public Sub SetReadyToSend(itemId As Long, recordLine As String) Implements ICargosContrattiFrontieraRepository.SetReadyToSend
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'READY_TO_SEND'," & vbCrLf &
-                "    RecordLine = @RecordLine," & vbCrLf &
-                "    MissingFields = NULL," & vbCrLf &
-                "    LastError = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'READY_TO_SEND'," & vbCrLf &
+                    "    RecordLine = @RecordLine," & vbCrLf &
+                    "    MissingFields = NULL," & vbCrLf &
+                    "    LastError = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "READY_TO_SEND"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@RecordLine", SqlDbType.NVarChar, -1).Value = If(recordLine, String.Empty)
@@ -153,15 +156,18 @@ Namespace Persistence
 
         Public Sub SetMissingData(itemId As Long, missingFields As IList(Of String), lastError As String) Implements ICargosContrattiFrontieraRepository.SetMissingData
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'MISSING_DATA'," & vbCrLf &
-                "    MissingFields = @MissingFields," & vbCrLf &
-                "    LastError = @LastError," & vbCrLf &
-                "    NextRetryAt = NULL," & vbCrLf &
-                "    ClaimedBy = NULL," & vbCrLf &
-                "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'MISSING_DATA'," & vbCrLf &
+                    "    MissingFields = @MissingFields," & vbCrLf &
+                    "    LastError = @LastError," & vbCrLf &
+                    "    NextRetryAt = NULL," & vbCrLf &
+                    "    ClaimedBy = NULL," & vbCrLf &
+                    "    ClaimedAt = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "MISSING_DATA"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@MissingFields", SqlDbType.NVarChar, -1).Value = String.Join(",", missingFields)
@@ -173,13 +179,16 @@ Namespace Persistence
 
         Public Sub SetCheckOk(itemId As Long) Implements ICargosContrattiFrontieraRepository.SetCheckOk
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'CHECK_OK'," & vbCrLf &
-                "    LastError = NULL," & vbCrLf &
-                "    ClaimedBy = NULL," & vbCrLf &
-                "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'CHECK_OK'," & vbCrLf &
+                    "    LastError = NULL," & vbCrLf &
+                    "    ClaimedBy = NULL," & vbCrLf &
+                    "    ClaimedAt = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "CHECK_OK"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@NowLocal", SqlDbType.DateTime2).Value = DateTime.Now
@@ -189,16 +198,19 @@ Namespace Persistence
 
         Public Sub SetSentOk(itemId As Long, transactionId As String) Implements ICargosContrattiFrontieraRepository.SetSentOk
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'SENT_OK'," & vbCrLf &
-                "    TransactionId = @TransactionId," & vbCrLf &
-                "    MissingFields = NULL," & vbCrLf &
-                "    LastError = NULL," & vbCrLf &
-                "    NextRetryAt = NULL," & vbCrLf &
-                "    ClaimedBy = NULL," & vbCrLf &
-                "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'SENT_OK'," & vbCrLf &
+                    "    TransactionId = @TransactionId," & vbCrLf &
+                    "    MissingFields = NULL," & vbCrLf &
+                    "    LastError = NULL," & vbCrLf &
+                    "    NextRetryAt = NULL," & vbCrLf &
+                    "    ClaimedBy = NULL," & vbCrLf &
+                    "    ClaimedAt = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "SENT_OK"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@TransactionId", SqlDbType.NVarChar, 100).Value = If(transactionId, String.Empty)
@@ -209,14 +221,17 @@ Namespace Persistence
 
         Public Sub SetDataError(itemId As Long, lastError As String) Implements ICargosContrattiFrontieraRepository.SetDataError
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'SENT_KO_DATA'," & vbCrLf &
-                "    LastError = @LastError," & vbCrLf &
-                "    NextRetryAt = NULL," & vbCrLf &
-                "    ClaimedBy = NULL," & vbCrLf &
-                "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'SENT_KO_DATA'," & vbCrLf &
+                    "    LastError = @LastError," & vbCrLf &
+                    "    NextRetryAt = NULL," & vbCrLf &
+                    "    ClaimedBy = NULL," & vbCrLf &
+                    "    ClaimedAt = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "SENT_KO_DATA"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
@@ -227,14 +242,17 @@ Namespace Persistence
 
         Public Sub SetRetry(itemId As Long, lastError As String, nextRetryAt As DateTime) Implements ICargosContrattiFrontieraRepository.SetRetry
             ExecuteNonQuery(
-                "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
-                "SET Status = 'SENT_KO_RETRY'," & vbCrLf &
-                "    LastError = @LastError," & vbCrLf &
-                "    NextRetryAt = @NextRetryAt," & vbCrLf &
-                "    ClaimedBy = NULL," & vbCrLf &
-                "    ClaimedAt = NULL," & vbCrLf &
-                "    UpdatedAt = @NowLocal" & vbCrLf &
-                "WHERE Id = @Id;",
+                AppendSnapshotStatusSync(
+                    "UPDATE dbo.Cargos_Contratti_Frontiera" & vbCrLf &
+                    "SET Status = 'SENT_KO_RETRY'," & vbCrLf &
+                    "    LastError = @LastError," & vbCrLf &
+                    "    NextRetryAt = @NextRetryAt," & vbCrLf &
+                    "    ClaimedBy = NULL," & vbCrLf &
+                    "    ClaimedAt = NULL," & vbCrLf &
+                    "    UpdatedAt = @NowLocal" & vbCrLf &
+                    "WHERE Id = @Id;",
+                    "SENT_KO_RETRY"
+                ),
                 itemId,
                 Sub(command)
                     command.Parameters.Add("@LastError", SqlDbType.NVarChar, -1).Value = If(lastError, String.Empty)
@@ -287,6 +305,19 @@ Namespace Persistence
                 End Using
             End Using
         End Sub
+
+        Private Shared Function AppendSnapshotStatusSync(frontieraSql As String, contractStatus As String) As String
+            Return frontieraSql & vbCrLf &
+                "UPDATE c" & vbCrLf &
+                "SET c.Status = '" & contractStatus.Replace("'", "''") & "'," & vbCrLf &
+                "    c.UpdatedAt = @NowLocal" & vbCrLf &
+                "FROM dbo.Cargos_Contratti c" & vbCrLf &
+                "INNER JOIN dbo.Cargos_Contratti_Frontiera f" & vbCrLf &
+                "    ON f.Company = c.Company" & vbCrLf &
+                "   AND f.ContractNo = c.ContractNo" & vbCrLf &
+                "   AND f.ContractLineNo = c.ContractLineNo" & vbCrLf &
+                "WHERE f.Id = @Id;"
+        End Function
 
         Private Shared Function MapOutboxRecord(reader As SqlDataReader) As OutboxRecord
             Dim item As New OutboxRecord() With {

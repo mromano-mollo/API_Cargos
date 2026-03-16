@@ -290,6 +290,7 @@ Fields:
   - `ConducenteContraentePatenteNumero`, `ConducenteContraentePatenteLuogorilCod`
 - `DateFingerprint` (hash/string built from normalized checkin/checkout)
 - `PayloadFingerprint` (hash/string built only from CaRGOS payload fields used by validation/record build; excludes internal metadata like `BranchId` / `BranchEmail`)
+- `Status` (latest mirrored processing state from `Cargos_Contratti_Frontiera` for quick operational view)
 - `LastQueuedFingerprint` (hash/string of last enqueued snapshot)
 - `LastQueuedAt` (datetime)
 - `LastSeenAt` (datetime)
@@ -630,6 +631,7 @@ Add correlation id per batch later if needed.
 - [x] Switched `Cargos_*` table timestamps and worker comparisons from UTC to local server datetime (`DateTime.Now` / `SYSDATETIME`).
 - [x] Added SQL migration logic to drop/recreate existing datetime default constraints on `Cargos_*` tables, so rerunning `Cargos_Setup.sql` also fixes already-created tables.
 - [x] Added persistent application logging with new table `dbo.Cargos_Log` and automatic console + DB sink via the central `ILogger`.
+- [x] Added `Cargos_Contratti.Status` as a quick mirror of the latest outbox status and wired repository transitions to keep it aligned with `Cargos_Contratti_Frontiera`.
 
 ---
 
