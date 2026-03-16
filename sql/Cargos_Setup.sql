@@ -1599,6 +1599,20 @@ BEGIN
             NULL, NULL, @NowLocal, @NowLocal, @NowLocal
         );
 
+    UPDATE f
+    SET
+        f.BranchId = s.BranchId,
+        f.BranchEmail = s.BranchEmail,
+        f.UpdatedAt = @NowLocal
+    FROM dbo.Cargos_Contratti_Frontiera f
+    INNER JOIN #SourceContracts s
+        ON s.Company = f.Company
+       AND s.ContractNo = f.ContractNo
+       AND s.[ContractLineNo] = f.[ContractLineNo]
+    WHERE
+        ISNULL(f.BranchId, '') <> ISNULL(s.BranchId, '')
+        OR ISNULL(f.BranchEmail, '') <> ISNULL(s.BranchEmail, '');
+
     INSERT INTO dbo.Cargos_Contratti_Frontiera
     (
         Company, ContractNo, [ContractLineNo], CargosContractId, BranchId, BranchEmail,

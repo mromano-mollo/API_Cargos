@@ -73,3 +73,4 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_logs_warn_error\
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_logs_warn_error\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_logs_warn_error\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_logs_warn_error\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\obj\Debug\API_Cargos.exe.config
