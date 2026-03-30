@@ -13,23 +13,23 @@ AS
 
 SELECT a.Code AS BranchId,
        CAST(NULL AS NVARCHAR(255)) AS BranchEmail,
-	     CAST(a.Code AS NVARCHAR(50)) AS AgenziaId,
-       CAST(a.Name AS NVARCHAR(70)) AS AgenziaNome,
-	     CAST(ISNULL(c.Code, d.Code) AS NVARCHAR(9)) AS AgenziaLuogoValue,
-	     a.City AS AgenziaCity,
-	     a.County AS AgenziaCounty,
-	     a.[post code] AS AgenziaPostCode,
-	     CAST(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-         a.Address,
-	     '/', ''), ',', ''), '.', ''), '-', ''), '+', ''), '\', ''), '#', ''), '[', ''), ']', ''), '°', ''), '''', '') AS NVARCHAR(150)) AS AgenziaIndirizzo,
-	     CAST(ISNULL(REPLACE(REPLACE(
-          -- Step 1: Taglia la stringa prima di "int" (se esiste)
-          CASE 
-              WHEN CHARINDEX('int', LOWER(interno)) > 0 
-              THEN LEFT(interno, CHARINDEX('int', LOWER(interno)) - 1)
-              ELSE interno -- Se non c'è "int", prende tutto il campo
-          END, 
-		   ' ', ''), '.', ''), '000') AS NVARCHAR(20)) AS AgenziaRecapitoTel
+	   a.Code AS AgenziaId,
+       a.Name AS AgenziaNome,
+	   ISNULL(c.Code, d.Code) AS AgenziaLuogoValue,
+	   a.City AS AgenziaCity,
+	   a.County AS AgenziaCounty,
+	   a.[post code] AS AgenziaPostCode,
+	   REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+       a.Address,
+	   '/', ''), ',', ''), '.', ''), '-', ''), '+', ''), '\', ''), '#', ''), '[', ''), ']', ''), '°', ''), '''', '') AS AgenziaIndirizzo,
+	   ISNULL(REPLACE(REPLACE(
+        -- Step 1: Taglia la stringa prima di "int" (se esiste)
+        CASE 
+            WHEN CHARINDEX('int', LOWER(interno)) > 0 
+            THEN LEFT(interno, CHARINDEX('int', LOWER(interno)) - 1)
+            ELSE interno -- Se non c'è "int", prende tutto il campo
+        END, 
+		' ', ''), '.', ''), '000') AS AgenziaRecapitoTel
 
   FROM filialiNolo a WITH(NOLOCK)
 

@@ -77,3 +77,4 @@ C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_snapshot_status\
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_snapshot_status\API_Cargos.exe
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_snapshot_status\API_Cargos.pdb
 C:\Users\m.romano\Programmazione\programmi\API_Cargos\bin\Debug_snapshot_status\API_Cargos.xml
+C:\Users\m.romano\Programmazione\programmi\API_Cargos\obj\Debug\API_Cargos.exe.config

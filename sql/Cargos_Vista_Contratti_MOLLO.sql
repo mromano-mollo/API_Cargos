@@ -25,12 +25,13 @@ SELECT
 	   LCTR.[End Rental Period] AS CONTRATTO_CHECKIN_DATA,
 	   Cargos_CheckIn.AgenziaLuogoValue AS CONTRATTO_CHECKIN_LUOGO_COD,
 	   Cargos_CheckIn.AgenziaIndirizzo AS CONTRATTO_CHECKIN_INDIRIZZO,
-	   'C00000818' AS OPERATORE_ID, -- CAPIRE CON GIAN
+	   REPLACE(HCTR.[Last Modify User], 'MOLLOFRATELLI\', '') AS OPERATORE_ID,
 	   Cargos_CheckOut.AgenziaId AS AGENZIA_ID,
 	   Cargos_CheckOut.AgenziaNome AS AGENZIA_NOME,
 	   Cargos_CheckOut.AgenziaLuogoValue AS AGENZIA_LUOGO_COD,
 	   Cargos_CheckOut.AgenziaIndirizzo AS AGENZIA_INDIRIZZO,
 	   Cargos_CheckOut.AgenziaRecapitoTel AS AGENZIA_RECAPITO_TEL,
+	   'm.romano@mollofratelli.com' AS BranchEmail,
 	   CASE
 		WHEN dbo.GetTipoVeicolo(Obj.[Cod_ Ragg_ Macrotipo]) LIKE '%AUTOCARR%' THEN '0'
 		ELSE 'A'
@@ -39,15 +40,15 @@ SELECT
 	   Obj.Modello AS VEICOLO_MODELLO,
 	   Obj.Targa AS VEICOLO_TARGA,
 	   C.[Surname] AS CONDUCENTE_CONTRAENTE_COGNOME,
-	   C.[Name] AS CONDUCENTE_CONTRAENTE_NOME,
+	   C.[First Name] AS CONDUCENTE_CONTRAENTE_NOME,
 	   CExt.[MOL001 Data Nascita$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_NASCITA_DATA,
-	   dbo.CargosGetLuogo(CExt.[MOL001 Luogo Nascita$7faa03b3-b4e5-4f14-b271-d84574b763cf], 0) AS CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD,
-	   ISNULL(dbo.CargosGetLuogo(CExt.[MOL001 Cittadinanza$7faa03b3-b4e5-4f14-b271-d84574b763cf], 1), dbo.CargosGetLuogo(LEFT(CExt.[MOL001 Cittadinanza$7faa03b3-b4e5-4f14-b271-d84574b763cf], 4), 1)) AS CONDUCENTE_CONTRAENTE_CITTADINANZA_COD,
-	   dbo.CargosGetDocID(CExt.[MOL001 Identity Document Type$7faa03b3-b4e5-4f14-b271-d84574b763cf]) AS CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD, -- PRENDERE DA TABELLA DOCUMENTI POLIZIA
+	   CExt.[MOL001 Luogo Nascita Value$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_NASCITA_LUOGO_COD,
+	   CExt.[MOL001 Cittadinanza Value$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_CITTADINANZA_COD,
+	   dbo.CargosGetDocID(CExt.[MOL001 Identity Document Type$7faa03b3-b4e5-4f14-b271-d84574b763cf]) AS CONDUCENTE_CONTRAENTE_DOCIDE_TIPO_COD,
 	   CExt.[MOL001 Identity Document Nr_$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_DOCIDE_NUMERO,
-	   dbo.CargosGetLuogo(CExt.[MOL001 Identity Doc Rel_ Place$7faa03b3-b4e5-4f14-b271-d84574b763cf], 0) AS CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD,
+	   CExt.[MOL001 Id Doc Rel Place Val$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_DOCIDE_LUOGORIL_COD,
 	   CExt.[MOL001 Driving License Nr_$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_PATENTE_NUMERO,
-	   dbo.CargosGetLuogo(CExt.[MOL001 Driving License Place$7faa03b3-b4e5-4f14-b271-d84574b763cf], 0) AS CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD
+	   CExt.[MOL001 Driv Lic Place Value$7faa03b3-b4e5-4f14-b271-d84574b763cf] AS CONDUCENTE_CONTRAENTE_PATENTE_LUOGORIL_COD
 
   FROM BC.dbo.[Mollo Srl$AR Contract Header] HCTR WITH(NOLOCK)
 
@@ -65,7 +66,7 @@ SELECT
     ON Cargos_CheckOut.AgenziaId = LCTR.[Ubicazione Consegna] COLLATE Latin1_General_100_CI_AS
 
   LEFT JOIN Cargos_Agenzie Cargos_CheckIn WITH(NOLOCK)
-    ON Cargos_CheckIn.AgenziaId = ISNULL(LCTR.[Ubicazione Reso], LCTR.[Ubicazione Consegna]) COLLATE Latin1_General_100_CI_AS
+    ON Cargos_CheckIn.AgenziaId = ISNULL(NULLIF(LCTR.[Ubicazione Reso], ''), LCTR.[Ubicazione Consegna]) COLLATE Latin1_General_100_CI_AS
 
   LEFT JOIN BC.dbo.[Mollo Srl$AR Object Card] Obj WITH(NOLOCK)
     ON Obj.[Object No_] = LCTR.No_
@@ -76,6 +77,7 @@ SELECT
  WHERE 1 = 1
    AND HCTR.[Contract Type] = 1
    AND HCTR.[Status] = 1
-   AND LCTR.Type = 6
+   AND LCTR.Type IN (1, 6)
    AND LCTR.[Entry Status] = 2
    AND ObjType.[CargosInfo] = 1
+   AND HCTR.[Starting Date] >= '20260309'
