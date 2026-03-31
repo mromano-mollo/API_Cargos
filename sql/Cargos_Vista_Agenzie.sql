@@ -13,7 +13,7 @@ AS
 
 SELECT a.Code AS BranchId,
        CAST(NULL AS NVARCHAR(255)) AS BranchEmail,
-	   a.Code AS AgenziaId,
+	   ISNULL(t.CargosAgenziaId, a.Code) AS AgenziaId,
        a.Name AS AgenziaNome,
 	   ISNULL(c.Code, d.Code) AS AgenziaLuogoValue,
 	   a.City AS AgenziaCity,
@@ -37,6 +37,9 @@ SELECT a.Code AS BranchId,
     ON b.codiceAzienda = '500'
    AND b.Cognome = 'FILIALE NOLEGGIO'
    AND b.Nome = a.name
+
+  LEFT JOIN dbo.Cargos_AgenziaId_Transcode t WITH(NOLOCK)
+    ON t.SourceAgenziaId = a.Code COLLATE Latin1_General_100_CI_AS
 
  OUTER APPLY (
     SELECT TOP 1 c.Code

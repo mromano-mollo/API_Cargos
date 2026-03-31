@@ -264,8 +264,13 @@ Naming convention: every new CARGOS table must start with `Cargos_` prefix.
 - `Cargos_Agenzie`
   - stores one current snapshot row per branch/agency source record
   - internal storage keeps `AgenziaId` at `NVARCHAR(50)` and `AgenziaLuogoValue` at `NVARCHAR(9)`
+  - `BranchId` is the local ERP branch code; `AgenziaId` is the real CaRGOS master ID
 - `Cargos_Agenzie_Frontiera`
   - stores startup agency bootstrap queue and outcomes for `CARGOS_WEB/Agenzia/Create`
+- `Cargos_AgenziaId_Transcode`
+  - punctual source-to-CaRGOS agency-id mapping table for exceptions such as `48_VERCELL -> 48 VERCELL`
+  - used by `Cargos_Vista_Agenzie` to emit the real CaRGOS `AgenziaId`
+  - contract views should join `Cargos_Agenzie` by local `BranchId`, not by external `AgenziaId`
 
 ### Snapshot table: `Cargos_Contratti`
 Purpose: keep one current state row per company-contract-line for change detection.
@@ -632,6 +637,7 @@ Add correlation id per batch later if needed.
 - [x] Added SQL migration logic to drop/recreate existing datetime default constraints on `Cargos_*` tables, so rerunning `Cargos_Setup.sql` also fixes already-created tables.
 - [x] Added persistent application logging with new table `dbo.Cargos_Log` and automatic console + DB sink via the central `ILogger`.
 - [x] Added `Cargos_Contratti.Status` as a quick mirror of the latest outbox status and wired repository transitions to keep it aligned with `Cargos_Contratti_Frontiera`.
+- [x] Added punctual agency-id transcode support through `dbo.Cargos_AgenziaId_Transcode` and switched contract views to match `Cargos_Agenzie` on local `BranchId` instead of external `AgenziaId`.
 
 ---
 

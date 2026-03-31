@@ -63,10 +63,10 @@ SELECT
     ON CExt.[no_] = C.[no_]
 
   LEFT JOIN Cargos_Agenzie Cargos_CheckOut WITH(NOLOCK)
-    ON Cargos_CheckOut.AgenziaId = LCTR.[Ubicazione Consegna] COLLATE Latin1_General_100_CI_AS
+    ON Cargos_CheckOut.BranchId = LCTR.[Ubicazione Consegna] COLLATE Latin1_General_100_CI_AS
 
   LEFT JOIN Cargos_Agenzie Cargos_CheckIn WITH(NOLOCK)
-    ON Cargos_CheckIn.AgenziaId = ISNULL(NULLIF(LCTR.[Ubicazione Reso], ''), LCTR.[Ubicazione Consegna]) COLLATE Latin1_General_100_CI_AS
+    ON Cargos_CheckIn.BranchId = ISNULL(NULLIF(LCTR.[Ubicazione Reso], ''), LCTR.[Ubicazione Consegna]) COLLATE Latin1_General_100_CI_AS
 
   LEFT JOIN BC.dbo.[Manetta$AR Object Card] Obj WITH(NOLOCK)
     ON Obj.[Object No_] = LCTR.No_

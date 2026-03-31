@@ -197,6 +197,16 @@ Core fields:
   - `2 = TIPO_VEICOLO`
   - `3 = TIPO_DOCUMENTO`
 
+### Agency ID transcoding
+- Add table `Cargos_AgenziaId_Transcode` for punctual local-to-CaRGOS `AgenziaId` exceptions.
+- Purpose:
+  - keep local ERP branch identity (`BranchId`) separated from external CaRGOS agency identity (`AgenziaId`);
+  - fix known mismatches such as `48_VERCELL -> 48 VERCELL` without global string replacement.
+- `Cargos_Vista_Agenzie` must output:
+  - `BranchId = local ERP code`
+  - `AgenziaId = COALESCE(transcoded value, local code)`
+- Contract views must join `Cargos_Agenzie` on `BranchId`, not on `AgenziaId`.
+
 ### Lookup service
 - Add app lookup service on top of `Cargos_Tabella_Righe`.
 - Purpose:
@@ -798,6 +808,7 @@ Notes:
 - [x] Added an explicit SQL migration block that refreshes existing datetime default constraints on `Cargos_*` tables to `SYSDATETIME()`, because altering script text alone does not update already-bound defaults.
 - [x] Added persistent runtime logging via new table `dbo.Cargos_Log` and a composite `ILogger` that writes both to console and SQL Server.
 - [x] Added `Cargos_Contratti.Status` and synchronized it from queue creation plus all repository status transitions for fast operational querying.
+- [x] Added punctual agency-id transcode table `dbo.Cargos_AgenziaId_Transcode`; agency view now emits real CaRGOS `AgenziaId`, and contract views match agencies by local `BranchId`.
 
 ---
 

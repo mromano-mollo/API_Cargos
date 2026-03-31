@@ -139,6 +139,19 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cargos_AgenziaId_Transcode
+    (
+        SourceAgenziaId NVARCHAR(50) NOT NULL CONSTRAINT PK_Cargos_AgenziaId_Transcode PRIMARY KEY,
+        CargosAgenziaId NVARCHAR(50) NOT NULL,
+        Notes NVARCHAR(255) NULL,
+        CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_CreatedAt DEFAULT (SYSDATETIME()),
+        UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_UpdatedAt DEFAULT (SYSDATETIME())
+    );
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Cargos_Agenzie_Frontiera', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Cargos_Agenzie_Frontiera
@@ -229,6 +242,85 @@ BEGIN
     )
         ALTER TABLE dbo.Cargos_Agenzie
             ADD CONSTRAINT UQ_Cargos_Agenzie_Branch UNIQUE (BranchId);
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'SourceAgenziaId') IS NULL
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ADD SourceAgenziaId NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_SourceAgenziaId DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'CargosAgenziaId') IS NULL
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ADD CargosAgenziaId NVARCHAR(50) NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_CargosAgenziaId DEFAULT (N'');
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'Notes') IS NULL
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ADD Notes NVARCHAR(255) NULL;
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'CreatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ADD CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_CreatedAt_Migrate DEFAULT (SYSDATETIME());
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'UpdatedAt') IS NULL
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ADD UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Cargos_AgenziaId_Transcode_UpdatedAt_Migrate DEFAULT (SYSDATETIME());
+
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'SourceAgenziaId') < 100
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ALTER COLUMN SourceAgenziaId NVARCHAR(50) NOT NULL;
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'CargosAgenziaId') < 100
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ALTER COLUMN CargosAgenziaId NVARCHAR(50) NOT NULL;
+    IF COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'Notes') IS NOT NULL
+       AND COL_LENGTH(N'dbo.Cargos_AgenziaId_Transcode', N'Notes') < 510
+        ALTER TABLE dbo.Cargos_AgenziaId_Transcode ALTER COLUMN Notes NVARCHAR(255) NULL;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NOT NULL
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM dbo.Cargos_AgenziaId_Transcode
+       WHERE SourceAgenziaId = N'48_VERCELL'
+   )
+BEGIN
+    INSERT INTO dbo.Cargos_AgenziaId_Transcode
+    (
+        SourceAgenziaId,
+        CargosAgenziaId,
+        Notes,
+        CreatedAt,
+        UpdatedAt
+    )
+    VALUES
+    (
+        N'48_VERCELL',
+        N'48 VERCELL',
+        N'Initial punctual transcode for CaRGOS agency master alignment.',
+        SYSDATETIME(),
+        SYSDATETIME()
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NOT NULL
+   AND OBJECT_ID(N'dbo.Cargos_Agenzie', N'U') IS NOT NULL
+BEGIN
+    UPDATE a
+    SET
+        a.AgenziaId = Transcode.CargosAgenziaId,
+        a.UpdatedAt = SYSDATETIME()
+    FROM dbo.Cargos_Agenzie a
+    INNER JOIN dbo.Cargos_AgenziaId_Transcode Transcode
+        ON Transcode.SourceAgenziaId = a.BranchId
+    WHERE ISNULL(a.AgenziaId, N'') <> ISNULL(Transcode.CargosAgenziaId, N'');
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NOT NULL
+   AND OBJECT_ID(N'dbo.Cargos_Agenzie_Frontiera', N'U') IS NOT NULL
+BEGIN
+    UPDATE f
+    SET
+        f.AgenziaId = Transcode.CargosAgenziaId,
+        f.UpdatedAt = SYSDATETIME()
+    FROM dbo.Cargos_Agenzie_Frontiera f
+    INNER JOIN dbo.Cargos_AgenziaId_Transcode Transcode
+        ON Transcode.SourceAgenziaId = f.BranchId
+    WHERE ISNULL(f.AgenziaId, N'') <> ISNULL(Transcode.CargosAgenziaId, N'')
+      AND ISNULL(f.Status, N'') <> N'SENT_OK';
 END;
 GO
 
@@ -1079,6 +1171,7 @@ GO
 
 IF OBJECT_ID(N'dbo.Cargos_Agenzie', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Agenzie_Frontiera', N'U') IS NOT NULL
+   OR OBJECT_ID(N'dbo.Cargos_AgenziaId_Transcode', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Contratti', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Contratti_Frontiera', N'U') IS NOT NULL
    OR OBJECT_ID(N'dbo.Cargos_Tabella', N'U') IS NOT NULL
@@ -1099,6 +1192,8 @@ BEGIN
         (N'dbo.Cargos_Agenzie', N'UpdatedAt', N'DF_Cargos_Agenzie_UpdatedAt'),
         (N'dbo.Cargos_Agenzie_Frontiera', N'CreatedAt', N'DF_Cargos_Agenzie_Frontiera_CreatedAt'),
         (N'dbo.Cargos_Agenzie_Frontiera', N'UpdatedAt', N'DF_Cargos_Agenzie_Frontiera_UpdatedAt'),
+        (N'dbo.Cargos_AgenziaId_Transcode', N'CreatedAt', N'DF_Cargos_AgenziaId_Transcode_CreatedAt'),
+        (N'dbo.Cargos_AgenziaId_Transcode', N'UpdatedAt', N'DF_Cargos_AgenziaId_Transcode_UpdatedAt'),
         (N'dbo.Cargos_Contratti', N'LastSeenAt', N'DF_Cargos_Contratti_LastSeenAt'),
         (N'dbo.Cargos_Contratti', N'CreatedAt', N'DF_Cargos_Contratti_CreatedAt'),
         (N'dbo.Cargos_Contratti', N'UpdatedAt', N'DF_Cargos_Contratti_UpdatedAt'),
