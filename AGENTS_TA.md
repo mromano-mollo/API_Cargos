@@ -354,14 +354,20 @@ Requirements:
 - 1-based `DAL..AL` mapping
 - truncation if over max length
 - deterministic output
+- apply final app-side text normalization before write for free-text payload fields (for example address/name/brand/model):
+  - strip diacritics;
+  - convert common Unicode punctuation to plain ASCII or spaces;
+  - remove unsupported characters and collapse repeated spaces.
 
 Algorithm:
 - initialize `Char()` buffer with 1505 spaces
 - for each `FieldSpec`
   - format source value
+  - normalize by field type (`Literal`, `Text`, `Identifier`, `Numeric`)
   - enforce max length
   - copy into `(StartPos - 1)` offset
 - return `New String(buffer)`
+- keep codes/identifiers and numeric fields on lighter normalization rules than free-text fields, so contract IDs and coded values are not damaged by aggressive cleanup.
 
 Validation guard:
 - throw/return error if a spec exceeds bounds `1..1505`
@@ -808,6 +814,7 @@ Notes:
 - [x] Added an explicit SQL migration block that refreshes existing datetime default constraints on `Cargos_*` tables to `SYSDATETIME()`, because altering script text alone does not update already-bound defaults.
 - [x] Added persistent runtime logging via new table `dbo.Cargos_Log` and a composite `ILogger` that writes both to console and SQL Server.
 - [x] Added `Cargos_Contratti.Status` and synchronized it from queue creation plus all repository status transitions for fast operational querying.
+- [x] Added field-aware free-text normalization in `RecordBuilder` for CaRGOS `SetCaratteri` compatibility, with SQL first-layer cleanup on agency name/address source values.
 - [x] Added punctual agency-id transcode table `dbo.Cargos_AgenziaId_Transcode`; agency view now emits real CaRGOS `AgenziaId`, and contract views match agencies by local `BranchId`.
 
 ---

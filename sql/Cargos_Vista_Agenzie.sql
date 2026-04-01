@@ -11,17 +11,20 @@ CREATE OR ALTER VIEW [dbo].[Cargos_Vista_Agenzie]
 
 AS
 
+
 SELECT a.Code AS BranchId,
        CAST(NULL AS NVARCHAR(255)) AS BranchEmail,
-	   ISNULL(t.CargosAgenziaId, a.Code) AS AgenziaId,
-       a.Name AS AgenziaNome,
+	   ISNULL(Transcode.CargosAgenziaId, a.Code) AS AgenziaId,
+       REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+       a.Name,
+	   '/', ''), ',', ''), '.', ''), '-', ''), '+', ''), '\', ''), '#', ''), '[', ''), ']', ''), '°', ''), 'º', ''), 'ª', ''), '''', '') AS AgenziaNome,
 	   ISNULL(c.Code, d.Code) AS AgenziaLuogoValue,
 	   a.City AS AgenziaCity,
 	   a.County AS AgenziaCounty,
 	   a.[post code] AS AgenziaPostCode,
-	   REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+	   REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
        a.Address,
-	   '/', ''), ',', ''), '.', ''), '-', ''), '+', ''), '\', ''), '#', ''), '[', ''), ']', ''), '°', ''), '''', '') AS AgenziaIndirizzo,
+	   '/', ''), ',', ''), '.', ''), '-', ''), '+', ''), '\', ''), '#', ''), '[', ''), ']', ''), '°', ''), 'º', ''), 'ª', ''), '''', '') AS AgenziaIndirizzo,
 	   ISNULL(REPLACE(REPLACE(
         -- Step 1: Taglia la stringa prima di "int" (se esiste)
         CASE 
@@ -38,8 +41,8 @@ SELECT a.Code AS BranchId,
    AND b.Cognome = 'FILIALE NOLEGGIO'
    AND b.Nome = a.name
 
-  LEFT JOIN dbo.Cargos_AgenziaId_Transcode t WITH(NOLOCK)
-    ON t.SourceAgenziaId = a.Code COLLATE Latin1_General_100_CI_AS
+  LEFT JOIN Cargos_AgenziaId_Transcode Transcode WITH(NOLOCK)
+    ON Transcode.SourceAgenziaId = a.Code COLLATE Latin1_General_100_CI_AS
 
  OUTER APPLY (
     SELECT TOP 1 c.Code

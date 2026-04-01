@@ -365,6 +365,10 @@ Fields:
 - Each field is written into its specified position range `DAL..AL` (1-based positions from CaRGOS docs).
 - Fill default with spaces.
 - Apply truncation if input exceeds field length.
+- Before truncation/padding, normalize free-text payload fields to CaRGOS-safe content:
+  - remove diacritics and common Unicode decoration characters;
+  - replace unsupported punctuation/symbols with spaces;
+  - collapse repeated spaces.
 - Current implementation follows the official `TRACCIATO RECORD` dimension set from the CaRGOS API manual.
 - The current official optional tail includes `VEICOLO_COLORE`, `VEICOLO_GPS`, `VEICOLO_BLOCCOM`, and `CONDUCENTE2_*` fields.
 - Fields not supplied by our source model are still written as blanks, but their official positions and lengths are reserved in the 1505-char line.
@@ -551,6 +555,7 @@ Add correlation id per batch later if needed.
 - RecordBuilder:
   - Output length = 1505
   - Field placement correctness for sample specs
+  - Unsupported characters are normalized before write (example: `Via 1º Maggio 39` -> `Via 1 Maggio 39`)
 - CryptoService:
   - Deterministic encryption test vectors (if provided)
 - Validation:
@@ -626,6 +631,7 @@ Add correlation id per batch later if needed.
 - [x] Added `CargosWeb.*` startup/auth settings for agency bootstrap.
 - [x] Added structured agency luogo handling (`AgenziaCity`, `AgenziaCounty`, `AgenziaPostCode`) for `AGENZIA_LUOGO_COD` resolution.
 - [x] Realigned `RecordBuilder` to the current official CaRGOS field dimensions (1505 total, current `TRACCIATO RECORD` layout).
+- [x] Added final free-text normalization in `RecordBuilder` for CaRGOS `SetCaratteri` compatibility, with first-layer SQL cleanup on agency name/address source values.
 - [x] Enlarged undersized SQL/app agency fields to avoid truncation before web/API submission (`AgenziaId` internal 50; API validation still 30; name/address/tel aligned to official sizes).
 - [x] Corrected SQL `COL_LENGTH` migration checks for `NVARCHAR` columns so rerunning `Cargos_Setup.sql` applies length upgrades correctly.
 - [x] Added daily overdue open-rental normalization: open extracted contracts with past `CONTRATTO_CHECKIN_DATA` are resent with today's effective check-in date once per day.

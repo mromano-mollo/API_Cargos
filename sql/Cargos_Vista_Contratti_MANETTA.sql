@@ -13,10 +13,10 @@ SELECT
        CONCAT(HCTR.[Contract No_], '-', LCTR.[Line No_]) AS CONTRATTO_ID,
 	   HCTR.[Starting Date] AS CONTRATTO_DATA,
 	   CASE
-		WHEN dbo.GetMetodoPagamento(HCTR.[Payment Method Code]) LIKE '%Credito%' THEN '0'
+		WHEN Payment.[Description] LIKE '%Credito%' THEN '0'
 		WHEN HCTR.[Payment Method Code] LIKE '%CONTANTI%' THEN '1'
-		WHEN dbo.GetMetodoPagamento(HCTR.[Payment Method Code]) LIKE '%Bonifico%' THEN '3'
-		WHEN dbo.GetMetodoPagamento(HCTR.[Payment Method Code]) LIKE '%RID%' THEN '4'
+		WHEN Payment.[Description] LIKE '%Bonifico%' THEN '3'
+		WHEN Payment.[Description] LIKE '%RID%' THEN '4'
 		ELSE '9'
 	   END AS CONTRATTO_TIPOP,
 	   LCTR.[Start Rental Period] AS CONTRATTO_CHECKOUT_DATA,
@@ -73,6 +73,9 @@ SELECT
 
   LEFT JOIN BC.dbo.[Manetta$AR Object Type] ObjType WITH(NOLOCK)
     ON ObjType.[Object No_] = Obj.[Object Type]
+
+  LEFT JOIN [BC-SQLSRV01].MOLLO.dbo.[Mollo$Payment Method$437dbf0e-84ff-417a-965d-ed2bb9650972] Payment WITH(NOLOCK)
+    ON Payment.Code = HCTR.[Payment Method Code]
 
  WHERE 1 = 1
    AND HCTR.[Contract Type] = 1

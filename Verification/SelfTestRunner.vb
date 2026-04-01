@@ -25,9 +25,18 @@ Namespace Verification
 
         Private Shared Sub VerifyRecordBuilder()
             Dim builder As New RecordBuilder()
-            Dim line As String = builder.Build(CreateSampleRecord())
+            Dim record = CreateSampleRecord()
+            record.ContrattoCheckoutIndirizzo = "Via 1" & ChrW(&H00BA) & " Maggio, 39"
+            record.ContrattoCheckinIndirizzo = "Corso dell" & ChrW(&H2019) & "Unit" & ChrW(&HE0) & " n. 7"
+            record.AgenziaNome = "Nol" & ChrW(&HE8) & "ggio " & ChrW(&H201C) & "Test" & ChrW(&H201D) & " S.r.l."
+            record.AgenziaIndirizzo = "Via 1" & ChrW(&H00BA) & " Maggio, 39"
+
+            Dim line As String = builder.Build(record)
             AssertTrue(line.Length = 1505, "RecordBuilder must return a 1505-char line.")
             AssertTrue(line.StartsWith("CTRTEST001"), "RecordBuilder should place contract id at the beginning of the line.")
+            AssertTrue(line.Contains("Via 1 Maggio 39"), "RecordBuilder should normalize unsupported address characters before send.")
+            AssertTrue(line.Contains("Noleggio Test S r l"), "RecordBuilder should normalize unsupported free-text characters before send.")
+            AssertTrue(Not line.Contains("º") AndAlso Not line.Contains("’") AndAlso Not line.Contains("è"), "RecordBuilder output should not contain unsupported special characters.")
         End Sub
 
         Private Shared Sub VerifyLookupResolution()
