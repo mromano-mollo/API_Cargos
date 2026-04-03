@@ -77,6 +77,15 @@ SELECT
   LEFT JOIN [BC-SQLSRV01].MOLLO.dbo.[Mollo$Payment Method$437dbf0e-84ff-417a-965d-ed2bb9650972] Payment WITH(NOLOCK)
     ON Payment.Code = HCTR.[Payment Method Code]
 
+  LEFT JOIN filialiNolo Filiale WITH(NOLOCK)
+    ON LCTR.[Ubicazione Consegna] = Filiale.Code COLLATE Latin1_General_100_CI_AS
+
+  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Customer$437dbf0e-84ff-417a-965d-ed2bb9650972] Customer WITH(NOLOCK)
+    ON Customer.[No_] = HCTR.[Customer No_]
+
+  LEFT JOIN [BC-SQLSRV01].[MOLLO].[dbo].[Mollo$Customer$437dbf0e-84ff-417a-965d-ed2bb9650972$ext] CustomerEXT WITH(NOLOCK)
+    ON CustomerEXT.[No_] = Customer.[No_]
+
  WHERE 1 = 1
    AND HCTR.[Contract Type] = 1
    AND HCTR.[Status] = 1
@@ -84,3 +93,5 @@ SELECT
    AND LCTR.[Entry Status] = 2
    AND ObjType.[CargosInfo] = 1
    AND HCTR.[Starting Date] >= '20260309'
+   AND Filiale.Attiva = 1
+   AND CustomerEXT.[NVS MOL Blocco per Vendita$7faa03b3-b4e5-4f14-b271-d84574b763cf] = 0
